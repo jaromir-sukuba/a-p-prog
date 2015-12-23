@@ -4,9 +4,9 @@
 #define ISP_PORT  PORTC
 #define ISP_DDR   DDRC
 #define ISP_PIN   PINC
-#define ISP_MCLR  0
+#define ISP_MCLR  3
 #define ISP_DAT   1
-#define ISP_CLK   2
+#define ISP_CLK   0
 
 #define  ISP_MCLR_1 ISP_PORT |= (1<<ISP_MCLR);
 #define  ISP_MCLR_0 ISP_PORT &= ~(1<<ISP_MCLR);
