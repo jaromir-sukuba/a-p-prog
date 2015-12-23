@@ -265,6 +265,34 @@ void setCPUtype(char* cpu) {
 		devid_expected = 0x2D40;
 		devid_mask = 0xFFE0;
 		}
+	else if (strcmp("16f1829",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x27E0;
+		devid_mask = 0xFFE0;
+		}
+	else if (strcmp("16lf1829",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x28E0;
+		devid_mask = 0xFFE0;
+		}
+	else if (strcmp("16f1825",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x2760;
+		devid_mask = 0xFFE0;
+		}
+	else if (strcmp("16lf1825",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x2860;
+		devid_mask = 0xFFE0;
+		}
 
 	else {
 		flsprintf(stderr,"Unsupported CPU type '%s'\n",cpu);
