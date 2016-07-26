@@ -313,6 +313,38 @@ void setCPUtype(char* cpu) {
 		devid_mask = 0xFFE0;
 		chip_family = CF_P16F_A;
 		}
+	else if (strcmp("12f1572",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 32;
+		devid_expected = 0x3050;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("12f1571",cpu)==0) 
+		{
+		flash_size = 2048;
+		page_size = 16;
+		devid_expected = 0x3051;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("12lf1572",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 32;
+		devid_expected = 0x3052;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("12fl1571",cpu)==0) 
+		{
+		flash_size = 2048;
+		page_size = 16;
+		devid_expected = 0x3053;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
 	else if (strcmp("18f25k50",cpu)==0) 
 		{
 		flash_size = 32768;				//bytes, where 1word = 2bytes = 16 bits
@@ -475,8 +507,8 @@ p16a_inc_pointer(n);
 p16a_read_page(tdat, 4);
 devid_hi = tdat[(2*0)+1];
 devid_lo = tdat[(2*0)+0];
-if (verbose>2) flsprintf(stdout,"Getting config +%d - lo:%2.2x,hi:%2.2x\n",n,devid_lo,devid_hi);
 retval = (((unsigned int)(devid_lo))<<0) + (((unsigned int)(devid_hi))<<8);
+if (verbose>2) flsprintf(stdout,"Getting config +%d - lo:%2.2x,hi:%2.2x = %4.4x\n",n,devid_lo,devid_hi,retval);
 return retval;
 }
 
@@ -610,7 +642,333 @@ return 0;
 
 
 
-/*
+
+size_t getlinex(char **lineptr, size_t *n, FILE *stream) {
+    char *bufptr = NULL;
+    char *p = bufptr;
+    size_t size;
+    int c;
+
+    if (lineptr == NULL) {
+    	return -1;
+    }
+    if (stream == NULL) {
+    	return -1;
+    }
+    if (n == NULL) {
+    	return -1;
+    }
+    bufptr = *lineptr;
+    size = *n;
+
+    c = fgetc(stream);
+    if (c == EOF) {
+    	return -1;
+    }
+    if (bufptr == NULL) {
+    	bufptr = malloc(128);
+    	if (bufptr == NULL) {
+    		return -1;
+    	}
+    	size = 128;
+    }
+    p = bufptr;
+    while(c != EOF) {
+    	if ((p - bufptr) > (size - 1)) {
+    		size = size + 128;
+    		bufptr = realloc(bufptr, size);
+    		if (bufptr == NULL) {
+    			return -1;
+    		}
+    	}
+    	*p++ = c;
+    	if (c == '\n') {
+    		break;
+    	}
+    	c = fgetc(stream);
+    }
+
+    *p++ = '\0';
+    *lineptr = bufptr;
+    *n = size;
+
+    return p - bufptr - 1;
+}
+
+
+int parse_hex (char * filename, unsigned char * progmem, unsigned char * config)
+{
+	char * line = NULL;
+	unsigned char line_content[128];
+    size_t len = 0;
+	int i,temp;
+    int read;
+	int line_pointer, line_len, line_type, line_address, line_address_offset;
+	if (verbose>2) printf ("Opening filename %s \n", filename);
+	FILE* sf = fopen(filename, "r");
+	if (sf==0)
+		return -1;
+	line_address_offset = 0;
+	if (verbose>2) printf ("File open\n");
+	while ((read =  getlinex(&line, &len, sf)) != -1) 
+		{
+		if (verbose>2) printf("\nRead %d chars: %s",read,line);
+		if (line[0]!=':') 
+			{
+			if (verbose>1) printf("--- : invalid\n");
+			return -1;
+			}
+		sscanf(line+1,"%2X",&line_len);
+		sscanf(line+3,"%4X",&line_address);
+		sscanf(line+7,"%2X",&line_type);
+		if (verbose>2) printf("Line len %d B, type %d, address 0x%4.4x offset 0x%4.4x\n",line_len,line_type,line_address,line_address_offset);
+		if (line_type==0)
+			{
+			for (i=0;i<line_len;i++)
+				{
+				sscanf(line+9+i*2,"%2X",&temp);
+				line_content[i] = temp;
+				}
+			if (line_address_offset==0)
+				{
+				if (verbose>2) printf("PM ");
+				for (i=0;i<line_len;i++) progmem[line_address+i] = line_content[i];
+				}
+			if (line_address_offset==0x30)
+				{
+				if (verbose>2) printf("CB ");
+				for (i=0;i<line_len;i++) config[line_address+i] = line_content[i];
+				}
+			if (line_address_offset==0x01)
+				{
+				if (verbose>2) printf("CB ");
+				for (i=0;i<line_len;i++) config[line_address+i-0x0E] = line_content[i];
+				}
+			}
+		if (line_type==4)
+			{
+			sscanf(line+9,"%4X",&line_address_offset);
+			}
+		if (verbose>2) for (i=0;i<line_len;i++) printf("%2.2X",line_content[i]);
+		if (verbose>2) printf("\n");
+		}
+	fclose(sf);
+	return 0;
+}
+
+int is_empty (unsigned char * buff, int len)
+{
+int i,empty;
+empty = 1;
+for (i=0;i<len;i++)
+	if (buff[i]!=0xFF) empty = 0;
+return empty;
+}
+
+int main(int argc, char *argv[]) 
+	{
+	int i,j,empty,pages_performed,devid,config,econfig;
+	unsigned char * pm_point, * cm_point;
+	unsigned char tdat[200];
+	parseArgs(argc,argv);
+	printf ("Opening serial port\n");
+	initSerialPort();
+	if (sleep_time>0)
+		{
+		printf ("Sleeping for %d ms while arduino bootloader expires\n", sleep_time);
+		fflush(stdout);
+		sleep_ms (sleep_time);
+		}
+
+	for (i=0;i<PROGMEM_LEN;i++) progmem[i] = 0xFF;
+	for (i=0;i<CONFIG_LEN;i++) config_bytes[i] = 0xFF;
+	
+	char* filename=argv[argc-1];
+	pm_point = (unsigned char *)(&progmem);
+	cm_point = (unsigned char *)(&config_bytes);
+	printf ("pp\n");
+
+	parse_hex(filename,pm_point,cm_point);
+	
+	//now this is ugly kludge
+	//the original programmer expected only file_image holding the image of memory to be programmed
+	//for PIC18, it is divided into two regions, program memory and config. to glue those two 
+	//different approaches, I made this. not particulary proud of having this mess
+	for (i=0;i<70000;i++) file_image [i] = progmem[i];
+	for (i=0;i<4;i++) file_image [2*0x8007 + i] = config_bytes[i];
+	for (i=0;i<70000;i++)
+		{
+		if ((i%2)!=0) 
+			file_image[i] = 0x3F&file_image[i];
+		}
+		/*
+	for (i=0;i<32;i++)	
+	{
+		if ((i%8)==0)
+			printf ("\nA: %4.4x : ", i);
+		printf (" %2.2x", file_image[i]);
+		fflush(stdout);
+	}
+	printf ("\n\n");
+
+	for (i=2*0x8007;i<(2*0x8007+32);i++)	
+	{
+		if ((i%8)==0)
+			printf ("\nA: %4.4x : ", i);
+		printf (" %2.2x", file_image[i]);
+		fflush(stdout);
+	}
+	printf ("\n\n");
+	*/
+		
+	prog_enter_progmode();
+	i = prog_get_device_id();
+	if (i==devid_expected)
+		printf ("Device ID: %4.4x \n", i);
+	else
+		{
+		printf ("Wrong device ID: %4.4x, expected: %4.4x\n", i,devid_expected);
+		printf ("Check for connection to target MCU, exiting now\n");
+		prog_exit_progmode();
+		return 1;
+		}
+	//ah, I need to unify programming interfaces for PIC16 and PIC18
+	if (chip_family==CF_P18F_A)
+		{
+		if (program==1)
+			{
+			pages_performed = 0;
+			p18a_mass_erase();
+			printf ("Programming FLASH (%d B in %d pages per %d bytes): \n",flash_size,flash_size/page_size,page_size);
+			fflush(stdout); 
+			for (i=0;i<flash_size;i=i+page_size)
+				{
+				if (verbose>1) 
+					{
+					printf (".");
+					fflush(stdout); 
+					}
+				if (is_empty(progmem+i,page_size)==0) 
+					{
+					p18a_write_page(progmem+i,i,page_size);
+					pages_performed++;
+					}
+				}
+			printf ("%d pages programmed\n",pages_performed);
+			printf ("Programming config\n");
+			for (i=0;i<16;i=i+2)
+				p18a_write_cfg(config_bytes[i],config_bytes[i+1],0x300000+i);
+			}
+		if (verify==1)
+			{
+			pages_performed = 0;
+			printf ("Verifying FLASH (%d B in %d pages per %d bytes): \n",flash_size,flash_size/page_size,page_size);
+			for (i=0;i<flash_size;i=i+page_size)
+				{
+				if (is_empty(progmem+i,page_size))
+					{
+					if (verbose>2) 
+						{	
+						printf ("#");
+						fflush(stdout); 
+						}		
+					}	
+				else
+					{
+					p18a_read_page(tdat,i,page_size);
+					pages_performed++;
+					if (verbose>3) printf ("Verifying page at 0x%4.4X\n",i);
+					if (verbose>1) 
+						{
+						printf (".");
+						fflush(stdout); 
+						}
+					for (j=0;j<page_size;j++)
+						{
+						if (progmem[i+j] != tdat[j])
+							{
+							printf ("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n",i+j,progmem[i+j],tdat[j]);
+							printf ("Exiting now\n");
+							prog_exit_progmode();
+							exit(0);
+							}
+						}
+					}
+				}
+			printf ("%d pages verified\n",pages_performed);
+			}
+		}
+	else
+	{
+	if (program==1)
+		{
+		p16a_mass_erase();
+		p16a_rst_pointer();
+
+		printf ("Programming FLASH (%d B in %d pages)",flash_size,flash_size/page_size);
+		fflush(stdout); 
+		for (i=0;i<flash_size;i=i+page_size)
+			{
+			if (verbose>1) 
+				{
+				printf (".");
+				fflush(stdout); 
+				}
+			p16a_program_page(i,page_size);
+			}
+		printf ("\n");
+		printf ("Programming config\n");
+		p16a_program_config();
+		}
+	if (verify==1)
+		{
+		printf ("Verifying FLASH (%d B in %d pages)",flash_size,flash_size/page_size);
+		fflush(stdout); 
+		p16a_rst_pointer();
+		for (i=0;i<flash_size;i=i+page_size)
+			{
+			if (verbose>1) 
+				{
+				printf (".");
+				fflush(stdout); 
+				}
+			p16a_read_page(tdat,page_size);
+			for (j=0;j<page_size;j++)
+				{
+				if (file_image[i+j] != tdat[j])
+					{
+					printf ("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n",i+j,file_image[i+j],tdat[j]);
+					prog_exit_progmode();
+					exit(0);
+					}
+				}
+			}
+		printf ("\n");
+		printf ("Verifying config\n");
+		config = p16a_get_config(7);
+		econfig = (((unsigned int)(file_image[2*0x8007]))<<0) + (((unsigned int)(file_image[2*0x8007+1]))<<8);
+
+		if (config==econfig) 
+			{
+			if (verbose>1) printf ("config 1 OK: %4.4X\n",config);
+			}
+		else	printf ("config 1 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
+		config = p16a_get_config(8);
+		econfig = (((unsigned int)(file_image[2*0x8008]))<<0) + (((unsigned int)(file_image[2*0x8008+1]))<<8);
+		if (config==econfig) 
+			{
+			if (verbose>1) printf ("config 2 OK: %4.4X\n",config);
+			}
+		else	printf ("config 2 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
+		}
+	}
+	prog_exit_progmode();
+	return 0;
+	}
+
+	
+	/*
+//this is how main looked for PIC16 only
 int main(int argc, char *argv[]) 
 	{
 	unsigned char tdat[128];
@@ -725,222 +1083,3 @@ int main(int argc, char *argv[])
 	return 0;
 	}
 */
-
-size_t getlinex(char **lineptr, size_t *n, FILE *stream) {
-    char *bufptr = NULL;
-    char *p = bufptr;
-    size_t size;
-    int c;
-
-    if (lineptr == NULL) {
-    	return -1;
-    }
-    if (stream == NULL) {
-    	return -1;
-    }
-    if (n == NULL) {
-    	return -1;
-    }
-    bufptr = *lineptr;
-    size = *n;
-
-    c = fgetc(stream);
-    if (c == EOF) {
-    	return -1;
-    }
-    if (bufptr == NULL) {
-    	bufptr = malloc(128);
-    	if (bufptr == NULL) {
-    		return -1;
-    	}
-    	size = 128;
-    }
-    p = bufptr;
-    while(c != EOF) {
-    	if ((p - bufptr) > (size - 1)) {
-    		size = size + 128;
-    		bufptr = realloc(bufptr, size);
-    		if (bufptr == NULL) {
-    			return -1;
-    		}
-    	}
-    	*p++ = c;
-    	if (c == '\n') {
-    		break;
-    	}
-    	c = fgetc(stream);
-    }
-
-    *p++ = '\0';
-    *lineptr = bufptr;
-    *n = size;
-
-    return p - bufptr - 1;
-}
-
-
-int parse_hex (char * filename, unsigned char * progmem, unsigned char * config)
-{
-	char * line = NULL;
-	unsigned char line_content[128];
-    size_t len = 0;
-	int i,temp;
-    int read;
-	int line_pointer, line_len, line_type, line_address, line_address_offset;
-	if (verbose>2) printf ("Opening filename %s \n", filename);
-	FILE* sf = fopen(filename, "r");
-	if (sf==0)
-		return -1;
-	line_address_offset = 0;
-	if (verbose>2) printf ("File open\n");
-	while ((read =  getlinex(&line, &len, sf)) != -1) 
-		{
-		if (verbose>2) printf("\nRead %d chars: %s",read,line);
-		if (line[0]!=':') 
-			{
-			if (verbose>1) printf("--- : invalid\n");
-			return -1;
-			}
-		sscanf(line+1,"%2X",&line_len);
-		sscanf(line+3,"%4X",&line_address);
-		sscanf(line+7,"%2X",&line_type);
-		if (verbose>2) printf("Line len %d B, type %d, address 0x%4.4x offset 0x%4.4x\n",line_len,line_type,line_address,line_address_offset);
-		if (line_type==0)
-			{
-			for (i=0;i<line_len;i++)
-				{
-				sscanf(line+9+i*2,"%2X",&temp);
-				line_content[i] = temp;
-				}
-			if (line_address_offset==0)
-				{
-				if (verbose>2) printf("PM ");
-				for (i=0;i<line_len;i++) progmem[line_address+i] = line_content[i];
-				}
-			if (line_address_offset==0x30)
-				{
-				if (verbose>2) printf("CB ");
-				for (i=0;i<line_len;i++) config[line_address+i] = line_content[i];
-				}
-			}
-		if (line_type==4)
-			{
-			sscanf(line+9,"%4X",&line_address_offset);
-			}
-		if (verbose>2) for (i=0;i<line_len;i++) printf("%2.2X",line_content[i]);
-		if (verbose>2) printf("\n");
-		}
-	fclose(sf);
-	return 0;
-}
-
-int is_empty (unsigned char * buff, int len)
-{
-int i,empty;
-empty = 1;
-for (i=0;i<len;i++)
-	if (buff[i]!=0xFF) empty = 0;
-return empty;
-}
-
-int main(int argc, char *argv[]) 
-	{
-	int i,j,empty,pages_performed;
-	unsigned char * pm_point, * cm_point;
-	unsigned char tdat[200];
-	parseArgs(argc,argv);
-	printf ("Opening serial port\n");
-	initSerialPort();
-	if (sleep_time>0)
-		{
-		printf ("Sleeping for %d ms while arduino bootloader expires\n", sleep_time);
-		fflush(stdout);
-		sleep_ms (sleep_time);
-		}
-
-	for (i=0;i<PROGMEM_LEN;i++) progmem[i] = 0xFF;
-	for (i=0;i<CONFIG_LEN;i++) config_bytes[i] = 0xFF;
-	
-	char* filename=argv[argc-1];
-	pm_point = (unsigned char *)(&progmem);
-	cm_point = (unsigned char *)(&config_bytes);
-	printf ("pp\n");
-
-	parse_hex(filename,pm_point,cm_point);
-
-	prog_enter_progmode();
-	i = prog_get_device_id();
-	if (i==devid_expected)
-		printf ("Device ID: %4.4x \n", i);
-	else
-		{
-		printf ("Wrong device ID: %4.4x, expected: %4.4x\n", i,devid_expected);
-		printf ("Check for connection to target MCU, exiting now\n");
-		prog_exit_progmode();
-		return 1;
-		}
-	if (program==1)
-		{
-		pages_performed = 0;
-		p18a_mass_erase();
-		printf ("Programming FLASH (%d B in %d pages per %d bytes): \n",flash_size,flash_size/page_size,page_size);
-		fflush(stdout); 
-		for (i=0;i<flash_size;i=i+page_size)
-			{
-			if (verbose>1) 
-				{
-				printf (".");
-				fflush(stdout); 
-				}
-			if (is_empty(progmem+i,page_size)==0) 
-				{
-				p18a_write_page(progmem+i,i,page_size);
-				pages_performed++;
-				}
-			}
-		printf ("%d pages programmed\n",pages_performed);
-		printf ("Programming config\n");
-		for (i=0;i<16;i=i+2)
-			p18a_write_cfg(config_bytes[i],config_bytes[i+1],0x300000+i);
-		}
-	if (verify==1)
-		{
-		pages_performed = 0;
-		printf ("Verifying FLASH (%d B in %d pages per %d bytes): \n",flash_size,flash_size/page_size,page_size);
-		for (i=0;i<flash_size;i=i+page_size)
-			{
-			if (is_empty(progmem+i,page_size))
-				{
-				if (verbose>2) 
-					{	
-					printf ("#");
-					fflush(stdout); 
-					}		
-				}	
-			else
-				{
-				p18a_read_page(tdat,i,page_size);
-				pages_performed++;
-				if (verbose>3) printf ("Verifying page at 0x%4.4X\n",i);
-				if (verbose>1) 
-					{
-					printf (".");
-					fflush(stdout); 
-					}
-				for (j=0;j<page_size;j++)
-					{
-					if (progmem[i+j] != tdat[j])
-						{
-						printf ("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n",i+j,progmem[i+j],tdat[j]);
-						printf ("Exiting now\n");
-						prog_exit_progmode();
-						exit(0);
-						}
-					}
-				}
-			}
-		printf ("%d pages verified\n",pages_performed);
-		}
-	prog_exit_progmode();
-	return 0;
-	}
