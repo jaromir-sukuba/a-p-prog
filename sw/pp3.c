@@ -281,6 +281,54 @@ void setCPUtype(char* cpu) {
 		devid_mask = 0xFFE0;
 		chip_family = CF_P16F_A;
 		}
+	else if (strcmp("16f1454",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x3020;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1455",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x3021;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1459",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x3023;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1454",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x3024;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1455",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x3025;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1459",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x3027;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}	
 	else if (strcmp("16f1829",cpu)==0) 
 		{
 		flash_size = 16384;
@@ -383,7 +431,7 @@ void setCPUtype(char* cpu) {
 		{
 		flash_size = 16384;
 		page_size = 32;
-		devid_expected = 0x2480;
+		devid_expected = 0x1480;
 		devid_mask = 0xFFE0;
 		chip_family = CF_P16F_A;
 		}
@@ -391,7 +439,7 @@ void setCPUtype(char* cpu) {
 		{
 		flash_size = 16384;
 		page_size = 32;
-		devid_expected = 0x24A0;
+		devid_expected = 0x14A0;
 		devid_mask = 0xFFE0;
 		chip_family = CF_P16F_A;
 		}
@@ -400,7 +448,7 @@ void setCPUtype(char* cpu) {
 		{
 		flash_size = 4096;
 		page_size = 32;
-		devid_expected = 0x2D80;
+		devid_expected = 0x1B80;
 		devid_mask = 0xFFE0;
 		chip_family = CF_P16F_A;
 		}
@@ -408,12 +456,12 @@ void setCPUtype(char* cpu) {
 		{
 		flash_size = 8192;
 		page_size = 32;
-		devid_expected = 0x2DC0;
+		devid_expected = 0x1BC0;
 		devid_mask = 0xFFE0;
 		chip_family = CF_P16F_A;
 		}
 		
-	else if (strcmp("12f822",cpu)==0) 
+	else if (strcmp("12f1822",cpu)==0) 
 		{
 		flash_size = 8192;
 		page_size = 32;
@@ -463,7 +511,7 @@ void setCPUtype(char* cpu) {
 		}
 	else if (strcmp("16f1503",cpu)==0) 
 		{
-		flash_size = 2048;
+		flash_size = 4096;
 		page_size = 32;
 		devid_expected = 0x2CE0;
 		devid_mask = 0xFFE0;
@@ -471,7 +519,7 @@ void setCPUtype(char* cpu) {
 		}
 	else if (strcmp("16lf1503",cpu)==0) 
 		{
-		flash_size = 2048;
+		flash_size = 4096;
 		page_size = 32;
 		devid_expected = 0x2DA0;
 		devid_mask = 0xFFE0;
@@ -706,6 +754,7 @@ devid_hi = tdat[(2*0)+1];
 devid_lo = tdat[(2*0)+0];
 if (verbose>2) flsprintf(stdout,"Getting devid - lo:%2.2x,hi:%2.2x\n",devid_lo,devid_hi);
 retval = (((unsigned int)(devid_lo))<<0) + (((unsigned int)(devid_hi))<<8);
+retval = retval & devid_mask;
 return retval;
 }
 
@@ -840,7 +889,8 @@ int prog_get_device_id (void)
 	unsigned char mem_str[10];
 	unsigned int devid;
 
-if (chip_family==CF_P16F_A) return p16a_get_devid();
+if (chip_family==CF_P16F_A) 
+	return p16a_get_devid();
 else 	if (chip_family==CF_P18F_A)
 	{
 	p18a_read_page((char *)&mem_str, 0x3FFFFE, 2);
