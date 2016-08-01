@@ -94,9 +94,9 @@ You may omit the actual programming using -p switch or verification using -n swi
 you can add some debug output info using -v parameter, ranging from -v 1 to -v 4
 
 
-# Supported devices
+## Supported devices
 
-Obviously, there is more supproted than verified (tested) devices. I tried to test at least one device from specific family. The members from one family are usually very very similar, giving me enough confidence to mark them as supproted. Of course, typos can happen, but those are easy to correct.
+Obviously, there is more supported than verified (tested) devices. I tried to test at least one device from specific family. The members from one family are usually very very similar, giving me enough confidence to mark them as supproted. Of course, typos can happen, but those are easy to correct.
 
 |              |        | 
 |--------------|--------| 
@@ -154,4 +154,4 @@ Obviously, there is more supproted than verified (tested) devices. I tried to te
 
 
 The whole project is licensed under MIT license, see LICENSE.md file.
-some more details to be found here https://hackaday.io/project/8559-pic16f1xxx-arduino-based-programmer
+Some more details to be found here https://hackaday.io/project/8559-pic16f1xxx-arduino-based-programmer
