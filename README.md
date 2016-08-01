@@ -49,23 +49,21 @@ When running under Linux, download source from this repository and run
 
 `gcc -Wall pp3.c -o pp3`
 
-This should build executable pp2. When working under windows, you can download compiled binary from this repository. Alternatively, you can build it from source - install minGW and run
+This should build executable pp3. When working under windows, you can download compiled binary from this repository. Alternatively, you can build it from source - install minGW and run
 
 `gcc -Wall pp3.c -o pp3`
 
 ie. the same procedure as on Linux. This should result in silent build with pp3.exe executable created.
 
-Running the executable with no parameters should only bring banner "pp programmer".
+Running the executable with no parameters should only bring banner "pp programmer". Though running with basic set of parameters
 
 `./pp2 -c /dev/ttyACM0 -t 16f1829 file.hex`
 
-under Linux, where -c parameter denotes port to be accessed, -t parameter defines PIC to be programmed and last parameter is binary file to be downloaded; or
+under Linux, where -c parameter denotes port to be accessed, -t parameter defines PIC to be programmed and last parameter is hex file to be downloaded; or
 
 `pp2.exe -c COM30 -t 16f1829 file.hex`
 
-under Windows to run the actual software. And program the target PIC.
-
-The result should look like this:
+under Windows should program the target PIC; with expected result:
 
 	$ ./pp2 -c /dev/ttyACM0 -t 16f1829 file.hex
     Opening serial port
@@ -76,7 +74,6 @@ The result should look like this:
     Verifying config
     Releasing MCLR
 
-And now your PIC should be programmed and running.
 
 ## Notes on software
 
