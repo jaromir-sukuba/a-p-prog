@@ -1,5 +1,10 @@
 # Programmer for 8-bit PIC devices built upon AVR (or Arduino)
 
+For [Micro progmeter](https://github.com/jaromir-sukuba/micro_progmeter) project I want to deliver full set of open-source materials, but it would be shame if folks trying to replicate the project would have to buy another programmer to flash the PIC MCU, so I decided to do a little bit of brain stretching and implement PIC16F1xxx programmer with... Arduino. I can't say I lvoe this platform, but it is low cost and available.
+Together with SDCC compiler this serves as completely open-source basis for many 8-bit PIC devices.
+
+The current project status: Programmer working, sources need cleanup, perhaps rework of its structure.
+
 
 ## Hardware
 There are two options fo hardware for this project:
@@ -39,17 +44,15 @@ Ensure JP2 is closed, then you can load new firmware into PIC programmer using r
 
 ## Software
 
-When running under Linux, download source from github and run
+When running under Linux, download source from this repository and run
 
 `gcc -Wall pp3.c -o pp3`
 
-This should buiild executable pp2.
-
-Under windows, you can download binary from here. Alternatively, you can build it from source - install minGW and run
+This should build executable pp2. When working under windows, you can download compiled binary from this repository. Alternatively, you can build it from source - install minGW and run
 
 `gcc -Wall pp3.c -o pp3`
 
-- the same procedure as on Linux. This should result in silent build with pp3.exe executable created.
+ie. the same procedure as on Linux. This should result in silent build with pp3.exe executable created.
 
 Running the executable with no parameters should only bring banner "pp programmer".
 
@@ -63,8 +66,7 @@ under Windows to run the actual software. And program the target PIC.
 
 The result should look like this:
 
-`$ ./pp2 -c /dev/ttyACM0 -t 16f1829 file.hex`
-
+	$ ./pp2 -c /dev/ttyACM0 -t 16f1829 file.hex
     Opening serial port
     Device ID 0x27E4
     Programming FLASH (16384 B in 256 pages)
@@ -77,7 +79,7 @@ And now your PIC should be programmed and running.
 
 ## Notes on software
 
-If you are running the hardware on generic arduino board or you forget to open jumper JP2 after loading firmware on dedicated hardware, you may need to insert waiting time after opening serial port and before communication - to ensure Arduino bootloader times out and takes control to programmer firmware. It should look like this
+If you are running the hardware on generic arduino board or you forget to open jumper JP2 after loading firmware on dedicated hardware, you may need to insert waiting time after opening serial port and before communication - to ensure Arduino bootloader times out after opening serial port and takes control to programmer firmware. It should look like this
 
 `pp2.exe -c COM30 -s 1700 -t 16f1829 file.bin`
 
@@ -91,7 +93,7 @@ You may omit the actual programming using -p switch or verification using -n swi
     Device ID 0x27E4
     Releasing MCLR
 
-you can add some debug output info using -v parameter, ranging from -v 1 to -v 4
+you can add some debug output info using -v parameter, ranging from -v 1 to -v 4. It may be suitable for debugging, -v 4 prints out all byte transaction on serial port, so be prepared for huge output.
 
 
 ## Supported devices
