@@ -1,9 +1,9 @@
 # Programmer for 8-bit PIC devices built upon AVR (or Arduino)
 
-For [Micro progmeter](https://github.com/jaromir-sukuba/micro_progmeter) project I want to deliver full set of open-source materials, but it would be shame if folks trying to replicate the project would have to buy another programmer to flash the PIC MCU, so I decided to do a little bit of brain stretching and implement PIC16F1xxx programmer with... Arduino. I can't say I lvoe this platform, but it is low cost and available.
+For [Micro progmeter](https://github.com/jaromir-sukuba/micro_progmeter) project I want to deliver full set of open-source materials, but it would be shame if folks trying to replicate the project would have to buy another programmer to flash the PIC MCU, so I decided to do a little bit of brain stretching and implement PIC16F1xxx programmer with... Arduino. I really can't say I love this platform, but it is low cost and available.
 Together with SDCC compiler this serves as completely open-source basis for many 8-bit PIC devices.
 
-The current project status: Programmer working, sources need cleanup, perhaps rework of its structure.
+The current project status: Programmer working, sources need cleanup, perhaps rework of its structure (it grew out of its simple structure).
 
 
 ## Hardware
@@ -34,11 +34,12 @@ Considering the target has its own power supply, connect GND, MCLR, PGC and PGD 
 The hardware works with both FT232RL and CY7C65213 in place of USB/serial converter. Both were proven to work, with no other hardware difference.
 ![img_4320](https://cloud.githubusercontent.com/assets/6984904/17289353/a3ccf6d4-57d9-11e6-9d4f-595633e7841a.JPG)
 
-Use [another arduino](https://www.arduino.cc/en/Tutorial/ArduinoISP) (or proper ISP programmer) to load Arduino UNO bootloader to PIC programmer board (performed onle once), turning it into regular arduino.
+Use [another arduino](https://www.arduino.cc/en/Tutorial/ArduinoISP) (or proper ISP programmer) to load Arduino UNO bootloader to PIC programmer board (performed only once), turning it into regular arduino compatible board.
 
 ![img_4329](https://cloud.githubusercontent.com/assets/6984904/17289342/98207cf2-57d9-11e6-9b62-caba0b140ca5.JPG)
 
 Ensure JP2 is closed, then you can load new firmware into PIC programmer using regular Arduino IDE. Open jumper JP2. Now you have your programmer ready to go, move on to software.
+The firmware should be able to compile outside Arduino IDE as it doesn't contain any Arduino-specific stuff, though I haven't tried that.
 
 
 
