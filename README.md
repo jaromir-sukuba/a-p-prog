@@ -4,6 +4,7 @@ For [Micro progmeter](https://github.com/jaromir-sukuba/micro_progmeter) project
 Together with SDCC compiler this serves as completely open-source basis for many 8-bit PIC devices.
 
 The current project status: Programmer working, sources need cleanup, perhaps rework of its structure (it grew out of its simple structure).
+# List of supported devices is at the end of this page.
 
 
 ## Hardware
@@ -101,14 +102,16 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 |              |        | 
 |--------------|--------| 
 | DEVICE       | TESTED | 
-| PIC12F1501   |        | 
+| PIC12F1501   | YES    | 
 | PIC12F1571   |        | 
 | PIC12F1572   | YES    | 
-| PIC12F1822   |        | 
+| PIC12F1612   | YES    | 
+| PIC12F1822   | YES    | 
 | PIC12F1840   | YES    | 
 | PIC12LF1501  |        | 
 | PIC12LF1571  |        | 
 | PIC12LF1572  |        | 
+| PIC12LF1612  |        | 
 | PIC12LF1822  |        | 
 | PIC12LF1840  |        | 
 | PIC16F1454   |        | 
@@ -118,6 +121,15 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16F1507   | YES    | 
 | PIC16F1508   |        | 
 | PIC16F1509   | YES    | 
+| PIC16F1574   |        | 
+| PIC16F1575   | YES    | 
+| PIC16F1578   |        | 
+| PIC16F1579   |        | 
+| PIC16F1613   |        | 
+| PIC16F1614   |        | 
+| PIC16F1615   | YES    | 
+| PIC16F1618   |        | 
+| PIC16F1619   |        | 
 | PIC16F1824   |        | 
 | PIC16F1825   |        | 
 | PIC16F1826   |        | 
@@ -132,6 +144,15 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16LF1507  |        | 
 | PIC16LF1508  |        | 
 | PIC16LF1509  |        | 
+| PIC16LF1574  |        | 
+| PIC16LF1575  |        | 
+| PIC16LF1578  |        | 
+| PIC16LF1579  |        | 
+| PIC16LF1613  |        | 
+| PIC16LF1614  |        | 
+| PIC16LF1615  |        | 
+| PIC16LF1618  |        | 
+| PIC16LF1619  |        | 
 | PIC16LF1824  |        | 
 | PIC16LF1825  |        | 
 | PIC16LF1826  |        | 
