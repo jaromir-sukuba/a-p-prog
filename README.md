@@ -58,15 +58,15 @@ ie. the same procedure as on Linux. This should result in silent build with pp3.
 
 Running the executable with no parameters should only bring banner "pp programmer". Though running with basic set of parameters
 
-`./pp2 -c /dev/ttyACM0 -t 16f1829 file.hex`
+`./pp3 -c /dev/ttyACM0 -t 16f1829 file.hex`
 
 under Linux, where -c parameter denotes port to be accessed, -t parameter defines PIC to be programmed and last parameter is hex file to be downloaded; or
 
-`pp2.exe -c COM30 -t 16f1829 file.hex`
+`pp3.exe -c COM30 -t 16f1829 file.hex`
 
 under Windows should program the target PIC; with expected result:
 
-	$ ./pp2 -c /dev/ttyACM0 -t 16f1829 file.hex
+	$ ./pp3 -c /dev/ttyACM0 -t 16f1829 file.hex
     Opening serial port
     Device ID 0x27E4
     Programming FLASH (16384 B in 256 pages)
@@ -80,13 +80,13 @@ under Windows should program the target PIC; with expected result:
 
 If you are running the hardware on generic arduino board or you forget to open jumper JP2 after loading firmware on dedicated hardware, you may need to insert waiting time after opening serial port and before communication - to ensure Arduino bootloader times out after opening serial port and takes control to programmer firmware. It should look like this
 
-`pp2.exe -c COM30 -s 1700 -t 16f1829 file.bin`
+`pp3.exe -c COM30 -s 1700 -t 16f1829 file.bin`
 
 where number after -s switch defines the number of miliseconds to wait after opening the serial port.
 
 You may omit the actual programming using -p switch or verification using -n switch, when using both the programmer only checks target device signature and exits.
 
-`$ ./pp2 -c /dev/ttyACM0 -p -n -t 16f1829 file.bin`
+`$ ./pp3 -c /dev/ttyACM0 -p -n -t 16f1829 file.bin`
 
     Opening serial port
     Device ID 0x27E4
