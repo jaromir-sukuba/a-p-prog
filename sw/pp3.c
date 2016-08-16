@@ -14,7 +14,7 @@
 #include <windows.h>
 #endif
 
-
+void setCPUtype(char* cpu);
 int parse_hex (char * filename, unsigned char * progmem, unsigned char * config);
 
 char* COM = "";
@@ -42,6 +42,7 @@ int chip_family = 0;
 #define	CF_P16F_A	0
 #define	CF_P18F_A	1
 #define	CF_P16F_B	2
+#define	CF_P18F_B	3
 
 
 void comErr(char *fmt, ...) {
@@ -257,7 +258,779 @@ void printHelp() {
 	}
 	
 
-void setCPUtype(char* cpu) {
+void parseArgs(int argc, char *argv[]) {	
+	int c;
+	while ((c = getopt (argc, argv, "c:nps:t:v:")) != -1) {
+		switch (c) {
+			case 'c' : 
+				COM=optarg;
+				break;
+			case 'n':
+		    	verify = 0;
+			    break;
+			case 'p':
+		    	program = 0;
+			    break;
+			case 's' : 
+				sscanf(optarg,"%d",&sleep_time);
+				break;
+			case 't' :
+				setCPUtype(optarg);
+				break;
+			case 'v' :
+				sscanf(optarg,"%d",&verbose);
+				break;
+			case '?' :
+				if (isprint (optopt))
+					fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+				else
+					fprintf (stderr,"Unknown option character `\\x%x'.\n",optopt);
+			  default:
+				fprintf (stderr,"Bug, unhandled option '%c'\n",c);
+				abort ();
+			}
+		}
+	if (argc<=1) 
+		printHelp();
+	}
+
+
+
+int p16a_rst_pointer (void)
+	{
+	if (verbose>2)
+		flsprintf(stdout,"Resetting PC\n");
+
+	putByte(0x03);
+	putByte(0x00);
+	getByte();
+	return 0;
+	}
+
+int p16a_mass_erase (void)
+	{
+	if (verbose>2)
+		flsprintf(stdout,"Mass erase\n");
+
+	putByte(0x07);
+	putByte(0x00);
+	getByte();
+	return 0;
+	}
+
+int p16a_load_config (void)
+	{
+	if (verbose>2)
+		flsprintf(stdout,"Load config\n");
+	putByte(0x04);
+	putByte(0x00);
+	getByte();
+	return 0;
+	}
+
+int p16a_inc_pointer (unsigned char num)
+	{
+	if (verbose>2)
+		flsprintf(stdout,"Inc pointer %d\n",num);
+	putByte(0x05);
+	putByte(0x01);
+	putByte(num);
+	getByte();
+	return 0;
+	}
+
+
+int p16a_program_page (unsigned int ptr, unsigned char num)
+	{
+	unsigned char i;
+	if (verbose>2)
+		flsprintf(stdout,"Programming page of %d bytes at %d\n", num,ptr);
+
+	putByte(0x08);
+	putByte(num+1);
+	putByte(num);
+	for (i=0;i<num;i++)
+		putByte(file_image[ptr+i]);
+	getByte();
+	return 0;
+	}
+
+int p16a_read_page (unsigned char * data, unsigned char num)
+{
+unsigned char i;
+	if (verbose>2)
+		flsprintf(stdout,"Reading page of %d bytes\n", num);
+putByte(0x06);
+putByte(0x01);
+putByte(num/2);
+getByte();
+for (i=0;i<num;i++)
+	{
+	*data++ = getByte();
+	}
+return 0;
+}
+
+
+int p16a_get_devid (void)
+{
+unsigned char tdat[20],devid_lo,devid_hi;
+unsigned int retval;
+p16a_rst_pointer();
+p16a_load_config();
+p16a_inc_pointer(6);
+p16a_read_page(tdat, 4);
+devid_hi = tdat[(2*0)+1];
+devid_lo = tdat[(2*0)+0];
+if (verbose>2) flsprintf(stdout,"Getting devid - lo:%2.2x,hi:%2.2x\n",devid_lo,devid_hi);
+retval = (((unsigned int)(devid_lo))<<0) + (((unsigned int)(devid_hi))<<8);
+retval = retval & devid_mask;
+return retval;
+}
+
+int p16a_get_config (unsigned char n)
+{
+unsigned char tdat[20],devid_lo,devid_hi;
+unsigned int retval;
+p16a_rst_pointer();
+p16a_load_config();
+p16a_inc_pointer(n);
+p16a_read_page(tdat, 4);
+devid_hi = tdat[(2*0)+1];
+devid_lo = tdat[(2*0)+0];
+retval = (((unsigned int)(devid_lo))<<0) + (((unsigned int)(devid_hi))<<8);
+if (verbose>2) flsprintf(stdout,"Getting config +%d - lo:%2.2x,hi:%2.2x = %4.4x\n",n,devid_lo,devid_hi,retval);
+return retval;
+}
+
+
+int p16a_program_config(void)
+{
+p16a_rst_pointer();
+p16a_load_config();
+p16a_inc_pointer(7);
+p16a_program_page(2*0x8007,2);
+p16a_program_page(2*0x8008,2);
+if (chip_family==CF_P16F_B) p16a_program_page(2*0x8009,2);
+return 0;
+}
+
+
+int p18a_read_page (unsigned char * data, int address, unsigned char num)
+{
+unsigned char i;
+	if (verbose>2)
+		flsprintf(stdout,"Reading page of %d bytes at 0x%4.4x\n", num, address);
+putByte(0x11);
+putByte(0x04);
+putByte(num/2);
+putByte((address>>16)&0xFF);
+putByte((address>>8)&0xFF);
+putByte((address>>0)&0xFF);
+getByte();
+for (i=0;i<num;i++)
+	{
+	*data++ = getByte();
+	}
+return 0;
+}
+
+int p18a_mass_erase (void)
+	{
+	if (verbose>2)
+		flsprintf(stdout,"Mass erase\n");
+
+	putByte(0x13);
+	putByte(0x00);
+	getByte();
+	return 0;
+	}
+
+int p18b_mass_erase (void)
+	{
+	if (verbose>2)
+		flsprintf(stdout,"Mass erase\n");
+	putByte(0x23);
+	putByte(0x00);
+	getByte();
+	return 0;
+	}
+
+
+int p18a_write_page (unsigned char * data, int address, unsigned char num)
+{
+unsigned char i,empty;
+empty = 0;
+for (i=0;i<num;i++)
+{
+	if (data[i]!=0xFF) empty = 0;
+}
+if (empty==1)	
+{
+if (verbose>3)
+		flsprintf(stdout,"~");
+	return 0;
+}
+if (verbose>2)
+	flsprintf(stdout,"Writing page of %d bytes at 0x%4.4x\n", num, address);
+putByte(0x12);
+putByte(4+num);
+putByte(num);
+putByte((address>>16)&0xFF);
+putByte((address>>8)&0xFF);
+putByte((address>>0)&0xFF);
+for (i=0;i<num;i++)
+		putByte(data[i]);
+getByte();
+return 0;
+}
+
+int p18a_write_cfg (unsigned char data1, unsigned char data2, int address)
+{
+unsigned char i;
+if (verbose>2)
+	flsprintf(stdout,"Writing cfg 0x%2.2x 0x%2.2x at 0x%6.6x\n", data1, data2, address);
+putByte(0x14);
+putByte(6);
+putByte(0);
+putByte((address>>16)&0xFF);
+putByte((address>>8)&0xFF);
+putByte((address>>0)&0xFF);
+putByte(data1);
+putByte(data2);
+getByte();
+return 0;
+}
+
+
+int prog_enter_progmode (void)
+	{
+	if (verbose>2)
+		flsprintf(stdout,"Entering programming mode\n");
+
+		if (chip_family==CF_P16F_A) putByte(0x01);
+	else 	if (chip_family==CF_P16F_B) putByte(0x01);
+	else 	if (chip_family==CF_P18F_A) putByte(0x10);
+	else 	if (chip_family==CF_P18F_B) putByte(0x10);
+	putByte(0x00);
+	getByte();
+	return 0;
+	}
+
+int prog_exit_progmode (void)
+	{
+	if (verbose>2)
+		flsprintf(stdout,"Exiting programming mode\n");
+
+	putByte(0x02);
+	putByte(0x00);
+	getByte();
+	return 0;
+	}
+
+int prog_get_device_id (void)
+{
+	unsigned char mem_str[10];
+	unsigned int devid;
+
+if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B) )
+	return p16a_get_devid();
+else 	if ((chip_family==CF_P18F_A)|(chip_family==CF_P18F_B))
+	{
+	p18a_read_page((char *)&mem_str, 0x3FFFFE, 2);
+	devid = (((unsigned int)(mem_str[1]))<<8) + (((unsigned int)(mem_str[0]))<<0);
+	devid = devid & devid_mask;
+	return devid;
+	}
+return 0;
+}
+
+
+
+
+
+size_t getlinex(char **lineptr, size_t *n, FILE *stream) {
+    char *bufptr = NULL;
+    char *p = bufptr;
+    size_t size;
+    int c;
+
+    if (lineptr == NULL) {
+    	return -1;
+    }
+    if (stream == NULL) {
+    	return -1;
+    }
+    if (n == NULL) {
+    	return -1;
+    }
+    bufptr = *lineptr;
+    size = *n;
+
+    c = fgetc(stream);
+    if (c == EOF) {
+    	return -1;
+    }
+    if (bufptr == NULL) {
+    	bufptr = malloc(128);
+    	if (bufptr == NULL) {
+    		return -1;
+    	}
+    	size = 128;
+    }
+    p = bufptr;
+    while(c != EOF) {
+    	if ((p - bufptr) > (size - 1)) {
+    		size = size + 128;
+    		bufptr = realloc(bufptr, size);
+    		if (bufptr == NULL) {
+    			return -1;
+    		}
+    	}
+    	*p++ = c;
+    	if (c == '\n') {
+    		break;
+    	}
+    	c = fgetc(stream);
+    }
+
+    *p++ = '\0';
+    *lineptr = bufptr;
+    *n = size;
+
+    return p - bufptr - 1;
+}
+
+
+int parse_hex (char * filename, unsigned char * progmem, unsigned char * config)
+{
+	char * line = NULL;
+	unsigned char line_content[128];
+    size_t len = 0;
+	int i,temp;
+    int read;
+    int p16_cfg = 0;
+	int line_pointer, line_len, line_type, line_address, line_address_offset;
+	if (verbose>2) printf ("Opening filename %s \n", filename);
+	FILE* sf = fopen(filename, "r");
+	if (sf==0)
+		return -1;
+	line_address_offset = 0;
+	if (chip_family==CF_P16F_A)
+		p16_cfg = 1;
+	if (chip_family==CF_P16F_B)
+		p16_cfg = 1;
+	
+	if (verbose>2) printf ("File open\n");
+	while ((read =  getlinex(&line, &len, sf)) != -1) 
+		{
+		if (verbose>2) printf("\nRead %d chars: %s",read,line);
+		if (line[0]!=':') 
+			{
+			if (verbose>1) printf("--- : invalid\n");
+			return -1;
+			}
+		sscanf(line+1,"%2X",&line_len);
+		sscanf(line+3,"%4X",&line_address);
+		sscanf(line+7,"%2X",&line_type);
+		if (verbose>2) printf("Line len %d B, type %d, address 0x%4.4x offset 0x%4.4x\n",line_len,line_type,line_address,line_address_offset);
+		if (line_type==0)
+			{
+			for (i=0;i<line_len;i++)
+				{
+				sscanf(line+9+i*2,"%2X",&temp);
+				line_content[i] = temp;
+				}
+			if ((line_address_offset==0)&(line_address<flash_size))
+				{
+				if (verbose>2) printf("PM ");
+				for (i=0;i<line_len;i++) progmem[line_address+i] = line_content[i];
+				}
+			if ((line_address_offset==0x30)&(chip_family==CF_P18F_A))
+				{
+				if (verbose>2) printf("CB ");
+				for (i=0;i<line_len;i++) config[i] = line_content[i];
+				}
+			if ((chip_family==CF_P18F_B)&(line_address==(flash_size-8)))
+				{
+				if (verbose>2) printf("CB ");
+				for (i=0;i<line_len;i++) config[i] = line_content[i];
+				}
+			if ((line_address_offset==0x01)&(p16_cfg==1))
+				{
+				if (verbose>2) printf("CB ");
+				for (i=0;i<line_len;i++) config[line_address+i-0x0E] = line_content[i];
+				}
+			}
+		if (line_type==4)
+			{
+			sscanf(line+9,"%4X",&line_address_offset);
+			}
+		if (verbose>2) for (i=0;i<line_len;i++) printf("%2.2X",line_content[i]);
+		if (verbose>2) printf("\n");
+		}
+	fclose(sf);
+	return 0;
+}
+
+int is_empty (unsigned char * buff, int len)
+{
+int i,empty;
+empty = 1;
+for (i=0;i<len;i++)
+	if (buff[i]!=0xFF) empty = 0;
+return empty;
+}
+
+int main(int argc, char *argv[]) 
+	{
+	int i,j,empty,pages_performed,devid,config,econfig;
+	unsigned char * pm_point, * cm_point;
+	unsigned char tdat[200];
+	parseArgs(argc,argv);
+	printf ("Opening serial port\n");
+	initSerialPort();
+	if (sleep_time>0)
+		{
+		printf ("Sleeping for %d ms while arduino bootloader expires\n", sleep_time);
+		fflush(stdout);
+		sleep_ms (sleep_time);
+		}
+
+	for (i=0;i<PROGMEM_LEN;i++) progmem[i] = 0xFF;
+	for (i=0;i<CONFIG_LEN;i++) config_bytes[i] = 0xFF;
+	
+	char* filename=argv[argc-1];
+	pm_point = (unsigned char *)(&progmem);
+	cm_point = (unsigned char *)(&config_bytes);
+	printf ("pp\n");
+
+	parse_hex(filename,pm_point,cm_point);
+	
+	//now this is ugly kludge
+	//the original programmer expected only file_image holding the image of memory to be programmed
+	//for PIC18, it is divided into two regions, program memory and config. to glue those two 
+	//different approaches, I made this. not particulary proud of having this mess
+	for (i=0;i<70000;i++) file_image [i] = progmem[i];
+	for (i=0;i<4;i++) file_image [2*0x8007 + i] = config_bytes[i];
+	for (i=0;i<70000;i++)
+		{
+		if ((i%2)!=0) 
+			file_image[i] = 0x3F&file_image[i];
+		}
+/*
+	for (i=0;i<32;i++)	
+	{
+		if ((i%8)==0)
+			printf ("\nA: %4.4x : ", i);
+		printf (" %2.2x", config_bytes[i]);
+		fflush(stdout);
+	}
+	printf ("\n\n");
+
+	for (i=2*0x8007;i<(2*0x8007+32);i++)	
+	{
+		if ((i%8)==0)
+			printf ("\nA: %4.4x : ", i);
+		printf (" %2.2x", file_image[i]);
+		fflush(stdout);
+	}
+	printf ("\n\n");
+	*/
+		
+	prog_enter_progmode();
+	i = prog_get_device_id();
+	if (i==devid_expected)
+		printf ("Device ID: %4.4x \n", i);
+	else
+		{
+		printf ("Wrong device ID: %4.4x, expected: %4.4x\n", i,devid_expected);
+		printf ("Check for connection to target MCU, exiting now\n");
+		prog_exit_progmode();
+		return 1;
+		}
+	//ah, I need to unify programming interfaces for PIC16 and PIC18
+	if ((chip_family==CF_P18F_A)|(chip_family==CF_P18F_B))
+		{
+		if (program==1)
+			{
+			pages_performed = 0;
+			if (chip_family==CF_P18F_A)
+				p18a_mass_erase();
+			if (chip_family==CF_P18F_B)
+				p18b_mass_erase();
+			printf ("Programming FLASH (%d B in %d pages per %d bytes): \n",flash_size,flash_size/page_size,page_size);
+			fflush(stdout); 
+			for (i=0;i<flash_size;i=i+page_size)
+				{
+				if (is_empty(progmem+i,page_size)==0) 
+					{
+					p18a_write_page(progmem+i,i,page_size);
+					pages_performed++;
+					printf ("#");
+					fflush(stdout); 
+					}
+				else if (verbose>2) 
+					{
+					printf (".");
+					fflush(stdout); 
+					}
+
+				}
+			printf ("%d pages programmed\n",pages_performed);
+			printf ("Programming config\n");
+			for (i=0;i<16;i=i+2)
+				if (chip_family==CF_P18F_A) p18a_write_cfg(config_bytes[i],config_bytes[i+1],0x300000+i);
+			for (i=0;i<8;i=i+2)
+				if (chip_family==CF_P18F_B) p18a_write_cfg(config_bytes[i],config_bytes[i+1],0x300000+i);
+
+			}
+		if (verify==1)
+			{
+			pages_performed = 0;
+			printf ("Verifying FLASH (%d B in %d pages per %d bytes): \n",flash_size,flash_size/page_size,page_size);
+			for (i=0;i<flash_size;i=i+page_size)
+				{
+				if (is_empty(progmem+i,page_size))
+					{
+					if (verbose>2) 
+						{	
+						printf ("#");
+						fflush(stdout); 
+						}		
+					}	
+				else
+					{
+					p18a_read_page(tdat,i,page_size);
+					pages_performed++;
+					if (verbose>3) printf ("Verifying page at 0x%4.4X\n",i);
+					if (verbose>1) 
+						{
+						printf ("#");
+						fflush(stdout); 
+						}
+					for (j=0;j<page_size;j++)
+						{
+						if (progmem[i+j] != tdat[j])
+							{
+							printf ("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n",i+j,progmem[i+j],tdat[j]);
+							printf ("Exiting now\n");
+							prog_exit_progmode();
+							exit(0);
+							}
+						}
+					}
+				}
+			printf ("%d pages verified\n",pages_performed);
+			}
+		}
+	else
+	{
+	if (program==1)
+		{
+		p16a_mass_erase();
+		p16a_rst_pointer();
+
+		printf ("Programming FLASH (%d B in %d pages)",flash_size,flash_size/page_size);
+		fflush(stdout); 
+		for (i=0;i<flash_size;i=i+page_size)
+			{
+			if (verbose>1) 
+				{
+				printf (".");
+				fflush(stdout); 
+				}
+			p16a_program_page(i,page_size);
+			}
+		printf ("\n");
+		printf ("Programming config\n");
+		p16a_program_config();
+		}
+	if (verify==1)
+		{
+		printf ("Verifying FLASH (%d B in %d pages)",flash_size,flash_size/page_size);
+		fflush(stdout); 
+		p16a_rst_pointer();
+		for (i=0;i<flash_size;i=i+page_size)
+			{
+			if (verbose>1) 
+				{
+				printf (".");
+				fflush(stdout); 
+				}
+			p16a_read_page(tdat,page_size);
+			for (j=0;j<page_size;j++)
+				{
+				if (file_image[i+j] != tdat[j])
+					{
+					printf ("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n",i+j,file_image[i+j],tdat[j]);
+					prog_exit_progmode();
+					exit(0);
+					}
+				}
+			}
+		printf ("\n");
+		printf ("Verifying config\n");
+		config = p16a_get_config(7);
+		econfig = (((unsigned int)(file_image[2*0x8007]))<<0) + (((unsigned int)(file_image[2*0x8007+1]))<<8);
+
+		if (config==econfig) 
+			{
+			if (verbose>1) printf ("config 1 OK: %4.4X\n",config);
+			}
+		else	printf ("config 1 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
+		config = p16a_get_config(8);
+		econfig = (((unsigned int)(file_image[2*0x8008]))<<0) + (((unsigned int)(file_image[2*0x8008+1]))<<8);
+		if (config==econfig) 
+			{
+			if (verbose>1) printf ("config 2 OK: %4.4X\n",config);
+			}
+		else	printf ("config 2 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
+		}
+	}
+	prog_exit_progmode();
+	return 0;
+	}
+
+	
+	/*
+//this is how main looked for PIC16 only
+int main(int argc, char *argv[]) 
+	{
+	unsigned char tdat[128];
+	int i,j,devid,config,econfig;
+	i = 5;
+
+	printf ("\n");
+	
+	parseArgs(argc,argv);
+	printf ("Opening serial port\n");
+	initSerialPort();
+	
+	if (sleep_time>0)
+		{
+		printf ("Sleeping for %d ms\n", sleep_time);
+		fflush(stdout);
+		sleep_ms (sleep_time);
+		}
+
+	char* filename=argv[argc-1];
+	if (verbose>2) printf ("Opening filename %s \n", filename);
+	FILE* sf = fopen(filename, "rb");
+	if (sf!=0)
+		{
+		if (verbose>2) printf ("File open\n");
+		fread(file_image, 70000, 1, sf);
+		fclose(sf);
+		}
+	else
+		printf ("Error opening file \n");
+	for (i=0;i<70000;i++)
+		{
+		if ((i%2)!=0) 
+			file_image[i] = 0x3F&file_image[i];
+		}
+
+	
+	enter_progmode();
+	
+	devid = get_devid();
+	if (devid_expected == (devid&devid_mask))
+		printf ("Device ID 0x%4.4X\n",devid);
+	else
+		printf ("Unexpected device ID 0x%4.4X\n",devid);
+	
+
+	if (program==1)
+		{
+		mass_erase();
+		rst_pointer();
+
+		printf ("Programming FLASH (%d B in %d pages)",flash_size,flash_size/page_size);
+		fflush(stdout); 
+		for (i=0;i<flash_size;i=i+page_size)
+			{
+			if (verbose>1) 
+				{
+				printf (".");
+				fflush(stdout); 
+				}
+			program_page(i,page_size);
+			}
+		printf ("\n");
+		printf ("Programming config\n");
+		program_config();
+		}
+	if (verify==1)
+		{
+		printf ("Verifying FLASH (%d B in %d pages)",flash_size,flash_size/page_size);
+		fflush(stdout); 
+		rst_pointer();
+		for (i=0;i<flash_size;i=i+page_size)
+			{
+			if (verbose>1) 
+				{
+				printf (".");
+				fflush(stdout); 
+				}
+			read_page(tdat,page_size);
+			for (j=0;j<page_size;j++)
+				{
+				if (file_image[i+j] != tdat[j])
+					{
+					printf ("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n",i+j,file_image[i+j],tdat[j]);
+					exit_progmode();
+					exit(0);
+					}
+				}
+			}
+		printf ("\n");
+		printf ("Verifying config\n");
+		config = get_config(7);
+		econfig = (((unsigned int)(file_image[2*0x8007]))<<0) + (((unsigned int)(file_image[2*0x8007+1]))<<8);
+
+		if (config==econfig) 
+			{
+			if (verbose>1) printf ("config 1 OK: %4.4X\n",config);
+			}
+		else	printf ("config 1 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
+		config = get_config(8);
+		econfig = (((unsigned int)(file_image[2*0x8008]))<<0) + (((unsigned int)(file_image[2*0x8008+1]))<<8);
+		if (config==econfig) 
+			{
+			if (verbose>1) printf ("config 2 OK: %4.4X\n",config);
+			}
+		else	printf ("config 2 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
+		}
+		
+	printf ("Releasing MCLR\n");
+	exit_progmode();
+
+	return 0;
+	}
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void setCPUtype(char* cpu) 
+{
 	if (strcmp("16f1507",cpu)==0) 
 		{
 		flash_size = 4096;		//bytes, where 1word = 2bytes, though actually being 14 bits
@@ -702,6 +1475,418 @@ void setCPUtype(char* cpu) {
 		devid_mask = 0xFFFF;
 		chip_family = CF_P16F_B;
 		}
+	else if (strcmp("16f1512",cpu)==0) 
+		{
+		flash_size = 2048;
+		page_size = 64;
+		devid_expected = 0x1700;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1513",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 64;
+		devid_expected = 0x1640;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1516",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 64;
+		devid_expected = 0x1680;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1517",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 64;
+		devid_expected = 0x16A0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1518",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x16C0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1519",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x16E0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1526",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 64;
+		devid_expected = 0x1580;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1527",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x15A0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1512",cpu)==0) 
+		{
+		flash_size = 2048;
+		page_size = 64;
+		devid_expected = 0x1720;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1513",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 64;
+		devid_expected = 0x1740;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1516",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 64;
+		devid_expected = 0x1780;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1517",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 64;
+		devid_expected = 0x17A0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1518",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x17C0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1519",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x17E0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1526",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 64;
+		devid_expected = 0x15C0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1527",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x15E0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1782",cpu)==0) 
+		{
+		flash_size = 2048;
+		page_size = 64;
+		devid_expected = 0x2A00;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1783",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 64;
+		devid_expected = 0x2A20;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1784",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 64;
+		devid_expected = 0x2A40;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1786",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 64;
+		devid_expected = 0x2A60;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1787",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 64;
+		devid_expected = 0x2A80;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1788",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x302B;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1789",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x302A;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1782",cpu)==0) 
+		{
+		flash_size = 2048;
+		page_size = 64;
+		devid_expected = 0x2AA0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1783",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 64;
+		devid_expected = 0x2AC0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1784",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 64;
+		devid_expected = 0x2AE0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1786",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 64;
+		devid_expected = 0x2B00;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1787",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 64;
+		devid_expected = 0x2B20;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1788",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x302D;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1789",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x302C;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1902",cpu)==0) 
+		{
+		flash_size = 2048;
+		page_size = 16;
+		devid_expected = 0x2C20;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1903",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 16;
+		devid_expected = 0x2C00;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1904",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 16;
+		devid_expected = 0x2C80;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1906",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x2C60;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1907",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x2C40;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1933",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 16;
+		devid_expected = 0x2300;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1934",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 16;
+		devid_expected = 0x2340;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1936",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x2360;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1937",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x2380;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1938",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 16;
+		devid_expected = 0x23A0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1939",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 16;
+		devid_expected = 0x23C0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1946",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x2500;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1947",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 16;
+		devid_expected = 0x2520;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+		
+	else if (strcmp("16lf1933",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 16;
+		devid_expected = 0x2400;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1934",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 16;
+		devid_expected = 0x2440;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1936",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x2460;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1937",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x2480;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1938",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 16;
+		devid_expected = 0x24A0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1939",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 16;
+		devid_expected = 0x24C0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1946",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x2580;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1947",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 16;
+		devid_expected = 0x25A0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P16F_A;
+		}
+
+
+
 
 	else if (strcmp("18f25k50",cpu)==0) 
 		{
@@ -784,728 +1969,109 @@ void setCPUtype(char* cpu) {
 		devid_mask = 0xFFE0;
 		chip_family = CF_P18F_A;
 		}
+		
+
+	else if (strcmp("18f24j50",cpu)==0) 
+		{
+		flash_size = 16384; 
+		page_size = 64; 
+		devid_expected = 0x4C00;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18lf24j50",cpu)==0) 
+		{
+		flash_size = 16384; 
+		page_size = 64; 
+		devid_expected = 0x4CC0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18f44j50",cpu)==0) 
+		{
+		flash_size = 16384;  
+		page_size = 64; 
+		devid_expected = 0x4C60;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18lf44j50",cpu)==0) 
+		{
+		flash_size = 16384;  
+		page_size = 64; 
+		devid_expected = 0x4D20;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18f25j50",cpu)==0) 
+		{
+		flash_size = 32768; 
+		page_size = 64; 
+		devid_expected = 0x4C20;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18lf25j50",cpu)==0) 
+		{
+		flash_size = 32768; 
+		page_size = 64; 
+		devid_expected = 0x4CE0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18f45j50",cpu)==0) 
+		{
+		flash_size = 32768;  
+		page_size = 64; 
+		devid_expected = 0x4C80;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18lf45j50",cpu)==0) 
+		{
+		flash_size = 32768; 
+		page_size = 64; 
+		devid_expected = 0x4D40;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18f26j50",cpu)==0) 
+		{
+		flash_size = 65536; 
+		page_size = 64; 
+		devid_expected = 0x4C40;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18lf26j50",cpu)==0) 
+		{
+		flash_size = 65536; 
+		page_size = 64; 
+		devid_expected = 0x4D00;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18f46j50",cpu)==0) 
+		{
+		flash_size = 65536; 
+		page_size = 64; 
+		devid_expected = 0x4CA0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18lf46j50",cpu)==0) 
+		{
+		flash_size = 65536; 
+		page_size = 64; 
+		devid_expected = 0x4D60;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+		
+		
+		
 	else {
 		flsprintf(stderr,"Unsupported CPU type '%s'\n",cpu);
 		abort();
 		}
 	}
-
-void parseArgs(int argc, char *argv[]) {	
-	int c;
-	while ((c = getopt (argc, argv, "c:nps:t:v:")) != -1) {
-		switch (c) {
-			case 'c' : 
-				COM=optarg;
-				break;
-			case 'n':
-		    	verify = 0;
-			    break;
-			case 'p':
-		    	program = 0;
-			    break;
-			case 's' : 
-				sscanf(optarg,"%d",&sleep_time);
-				break;
-			case 't' :
-				setCPUtype(optarg);
-				break;
-			case 'v' :
-				sscanf(optarg,"%d",&verbose);
-				break;
-			case '?' :
-				if (isprint (optopt))
-					fprintf (stderr, "Unknown option `-%c'.\n", optopt);
-				else
-					fprintf (stderr,"Unknown option character `\\x%x'.\n",optopt);
-			  default:
-				fprintf (stderr,"Bug, unhandled option '%c'\n",c);
-				abort ();
-			}
-		}
-	if (argc<=1) 
-		printHelp();
-	}
-
-
-
-int p16a_rst_pointer (void)
-	{
-	if (verbose>2)
-		flsprintf(stdout,"Resetting PC\n");
-
-	putByte(0x03);
-	putByte(0x00);
-	getByte();
-	return 0;
-	}
-
-int p16a_mass_erase (void)
-	{
-	if (verbose>2)
-		flsprintf(stdout,"Mass erase\n");
-
-	putByte(0x07);
-	putByte(0x00);
-	getByte();
-	return 0;
-	}
-
-int p16a_load_config (void)
-	{
-	if (verbose>2)
-		flsprintf(stdout,"Load config\n");
-	putByte(0x04);
-	putByte(0x00);
-	getByte();
-	return 0;
-	}
-
-int p16a_inc_pointer (unsigned char num)
-	{
-	if (verbose>2)
-		flsprintf(stdout,"Inc pointer %d\n",num);
-	putByte(0x05);
-	putByte(0x01);
-	putByte(num);
-	getByte();
-	return 0;
-	}
-
-
-int p16a_program_page (unsigned int ptr, unsigned char num)
-	{
-	unsigned char i;
-	if (verbose>2)
-		flsprintf(stdout,"Programming page of %d bytes at %d\n", num,ptr);
-
-	putByte(0x08);
-	putByte(num+1);
-	putByte(num);
-	for (i=0;i<num;i++)
-		putByte(file_image[ptr+i]);
-	getByte();
-	return 0;
-	}
-
-int p16a_read_page (unsigned char * data, unsigned char num)
-{
-unsigned char i;
-	if (verbose>2)
-		flsprintf(stdout,"Reading page of %d bytes\n", num);
-putByte(0x06);
-putByte(0x01);
-putByte(num/2);
-getByte();
-for (i=0;i<num;i++)
-	{
-	*data++ = getByte();
-	}
-return 0;
-}
-
-
-int p16a_get_devid (void)
-{
-unsigned char tdat[20],devid_lo,devid_hi;
-unsigned int retval;
-p16a_rst_pointer();
-p16a_load_config();
-p16a_inc_pointer(6);
-p16a_read_page(tdat, 4);
-devid_hi = tdat[(2*0)+1];
-devid_lo = tdat[(2*0)+0];
-if (verbose>2) flsprintf(stdout,"Getting devid - lo:%2.2x,hi:%2.2x\n",devid_lo,devid_hi);
-retval = (((unsigned int)(devid_lo))<<0) + (((unsigned int)(devid_hi))<<8);
-retval = retval & devid_mask;
-return retval;
-}
-
-int p16a_get_config (unsigned char n)
-{
-unsigned char tdat[20],devid_lo,devid_hi;
-unsigned int retval;
-p16a_rst_pointer();
-p16a_load_config();
-p16a_inc_pointer(n);
-p16a_read_page(tdat, 4);
-devid_hi = tdat[(2*0)+1];
-devid_lo = tdat[(2*0)+0];
-retval = (((unsigned int)(devid_lo))<<0) + (((unsigned int)(devid_hi))<<8);
-if (verbose>2) flsprintf(stdout,"Getting config +%d - lo:%2.2x,hi:%2.2x = %4.4x\n",n,devid_lo,devid_hi,retval);
-return retval;
-}
-
-
-int p16a_program_config(void)
-{
-p16a_rst_pointer();
-p16a_load_config();
-p16a_inc_pointer(7);
-p16a_program_page(2*0x8007,2);
-p16a_program_page(2*0x8008,2);
-if (chip_family==CF_P16F_B) p16a_program_page(2*0x8009,2);
-return 0;
-}
-
-
-int p18a_read_page (unsigned char * data, int address, unsigned char num)
-{
-unsigned char i;
-	if (verbose>2)
-		flsprintf(stdout,"Reading page of %d bytes at 0x%4.4x\n", num, address);
-putByte(0x11);
-putByte(0x04);
-putByte(num/2);
-putByte((address>>16)&0xFF);
-putByte((address>>8)&0xFF);
-putByte((address>>0)&0xFF);
-getByte();
-for (i=0;i<num;i++)
-	{
-	*data++ = getByte();
-	}
-return 0;
-}
-
-int p18a_mass_erase (void)
-	{
-	if (verbose>2)
-		flsprintf(stdout,"Mass erase\n");
-
-	putByte(0x13);
-	putByte(0x00);
-	getByte();
-	return 0;
-	}
-
-int p18a_write_page (unsigned char * data, int address, unsigned char num)
-{
-unsigned char i,empty;
-empty = 0;
-for (i=0;i<num;i++)
-{
-	if (data[i]!=0xFF) empty = 0;
-}
-if (empty==1)	
-{
-if (verbose>3)
-		flsprintf(stdout,"~");
-	return 0;
-}
-if (verbose>2)
-	flsprintf(stdout,"Writing page of %d bytes at 0x%4.4x\n", num, address);
-putByte(0x12);
-putByte(4+num);
-putByte(num);
-putByte((address>>16)&0xFF);
-putByte((address>>8)&0xFF);
-putByte((address>>0)&0xFF);
-for (i=0;i<num;i++)
-		putByte(data[i]);
-getByte();
-return 0;
-}
-
-int p18a_write_cfg (unsigned char data1, unsigned char data2, int address)
-{
-unsigned char i;
-if (verbose>2)
-	flsprintf(stdout,"Writing cfg 0x%2.2x 0x%2.2x at 0x%6.6x\n", data1, data2, address);
-putByte(0x14);
-putByte(6);
-putByte(0);
-putByte((address>>16)&0xFF);
-putByte((address>>8)&0xFF);
-putByte((address>>0)&0xFF);
-putByte(data1);
-putByte(data2);
-getByte();
-return 0;
-}
-
-
-int prog_enter_progmode (void)
-	{
-	if (verbose>2)
-		flsprintf(stdout,"Entering programming mode\n");
-
-		if (chip_family==CF_P16F_A) putByte(0x01);
-	else 	if (chip_family==CF_P16F_B) putByte(0x01);
-	else 	if (chip_family==CF_P18F_A) putByte(0x10);
-	putByte(0x00);
-	getByte();
-	return 0;
-	}
-
-int prog_exit_progmode (void)
-	{
-	if (verbose>2)
-		flsprintf(stdout,"Exiting programming mode\n");
-
-	putByte(0x02);
-	putByte(0x00);
-	getByte();
-	return 0;
-	}
-
-int prog_get_device_id (void)
-{
-	unsigned char mem_str[10];
-	unsigned int devid;
-
-if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B) )
-	return p16a_get_devid();
-else 	if (chip_family==CF_P18F_A)
-	{
-	p18a_read_page((char *)&mem_str, 0x3FFFFE, 2);
-	devid = (((unsigned int)(mem_str[1]))<<8) + (((unsigned int)(mem_str[0]))<<0);
-	devid = devid & devid_mask;
-	return devid;
-	}
-return 0;
-}
-
-
-
-
-
-size_t getlinex(char **lineptr, size_t *n, FILE *stream) {
-    char *bufptr = NULL;
-    char *p = bufptr;
-    size_t size;
-    int c;
-
-    if (lineptr == NULL) {
-    	return -1;
-    }
-    if (stream == NULL) {
-    	return -1;
-    }
-    if (n == NULL) {
-    	return -1;
-    }
-    bufptr = *lineptr;
-    size = *n;
-
-    c = fgetc(stream);
-    if (c == EOF) {
-    	return -1;
-    }
-    if (bufptr == NULL) {
-    	bufptr = malloc(128);
-    	if (bufptr == NULL) {
-    		return -1;
-    	}
-    	size = 128;
-    }
-    p = bufptr;
-    while(c != EOF) {
-    	if ((p - bufptr) > (size - 1)) {
-    		size = size + 128;
-    		bufptr = realloc(bufptr, size);
-    		if (bufptr == NULL) {
-    			return -1;
-    		}
-    	}
-    	*p++ = c;
-    	if (c == '\n') {
-    		break;
-    	}
-    	c = fgetc(stream);
-    }
-
-    *p++ = '\0';
-    *lineptr = bufptr;
-    *n = size;
-
-    return p - bufptr - 1;
-}
-
-
-int parse_hex (char * filename, unsigned char * progmem, unsigned char * config)
-{
-	char * line = NULL;
-	unsigned char line_content[128];
-    size_t len = 0;
-	int i,temp;
-    int read;
-	int line_pointer, line_len, line_type, line_address, line_address_offset;
-	if (verbose>2) printf ("Opening filename %s \n", filename);
-	FILE* sf = fopen(filename, "r");
-	if (sf==0)
-		return -1;
-	line_address_offset = 0;
-	if (verbose>2) printf ("File open\n");
-	while ((read =  getlinex(&line, &len, sf)) != -1) 
-		{
-		if (verbose>2) printf("\nRead %d chars: %s",read,line);
-		if (line[0]!=':') 
-			{
-			if (verbose>1) printf("--- : invalid\n");
-			return -1;
-			}
-		sscanf(line+1,"%2X",&line_len);
-		sscanf(line+3,"%4X",&line_address);
-		sscanf(line+7,"%2X",&line_type);
-		if (verbose>2) printf("Line len %d B, type %d, address 0x%4.4x offset 0x%4.4x\n",line_len,line_type,line_address,line_address_offset);
-		if (line_type==0)
-			{
-			for (i=0;i<line_len;i++)
-				{
-				sscanf(line+9+i*2,"%2X",&temp);
-				line_content[i] = temp;
-				}
-			if (line_address_offset==0)
-				{
-				if (verbose>2) printf("PM ");
-				for (i=0;i<line_len;i++) progmem[line_address+i] = line_content[i];
-				}
-			if (line_address_offset==0x30)
-				{
-				if (verbose>2) printf("CB ");
-				for (i=0;i<line_len;i++) config[line_address+i] = line_content[i];
-				}
-			if (line_address_offset==0x01)
-				{
-				if (verbose>2) printf("CB ");
-				for (i=0;i<line_len;i++) config[line_address+i-0x0E] = line_content[i];
-				}
-			}
-		if (line_type==4)
-			{
-			sscanf(line+9,"%4X",&line_address_offset);
-			}
-		if (verbose>2) for (i=0;i<line_len;i++) printf("%2.2X",line_content[i]);
-		if (verbose>2) printf("\n");
-		}
-	fclose(sf);
-	return 0;
-}
-
-int is_empty (unsigned char * buff, int len)
-{
-int i,empty;
-empty = 1;
-for (i=0;i<len;i++)
-	if (buff[i]!=0xFF) empty = 0;
-return empty;
-}
-
-int main(int argc, char *argv[]) 
-	{
-	int i,j,empty,pages_performed,devid,config,econfig;
-	unsigned char * pm_point, * cm_point;
-	unsigned char tdat[200];
-	parseArgs(argc,argv);
-	printf ("Opening serial port\n");
-	initSerialPort();
-	if (sleep_time>0)
-		{
-		printf ("Sleeping for %d ms while arduino bootloader expires\n", sleep_time);
-		fflush(stdout);
-		sleep_ms (sleep_time);
-		}
-
-	for (i=0;i<PROGMEM_LEN;i++) progmem[i] = 0xFF;
-	for (i=0;i<CONFIG_LEN;i++) config_bytes[i] = 0xFF;
-	
-	char* filename=argv[argc-1];
-	pm_point = (unsigned char *)(&progmem);
-	cm_point = (unsigned char *)(&config_bytes);
-	printf ("pp\n");
-
-	parse_hex(filename,pm_point,cm_point);
-	
-	//now this is ugly kludge
-	//the original programmer expected only file_image holding the image of memory to be programmed
-	//for PIC18, it is divided into two regions, program memory and config. to glue those two 
-	//different approaches, I made this. not particulary proud of having this mess
-	for (i=0;i<70000;i++) file_image [i] = progmem[i];
-	for (i=0;i<4;i++) file_image [2*0x8007 + i] = config_bytes[i];
-	for (i=0;i<70000;i++)
-		{
-		if ((i%2)!=0) 
-			file_image[i] = 0x3F&file_image[i];
-		}
-		/*
-	for (i=0;i<32;i++)	
-	{
-		if ((i%8)==0)
-			printf ("\nA: %4.4x : ", i);
-		printf (" %2.2x", file_image[i]);
-		fflush(stdout);
-	}
-	printf ("\n\n");
-
-	for (i=2*0x8007;i<(2*0x8007+32);i++)	
-	{
-		if ((i%8)==0)
-			printf ("\nA: %4.4x : ", i);
-		printf (" %2.2x", file_image[i]);
-		fflush(stdout);
-	}
-	printf ("\n\n");
-	*/
-		
-	prog_enter_progmode();
-	i = prog_get_device_id();
-	if (i==devid_expected)
-		printf ("Device ID: %4.4x \n", i);
-	else
-		{
-		printf ("Wrong device ID: %4.4x, expected: %4.4x\n", i,devid_expected);
-		printf ("Check for connection to target MCU, exiting now\n");
-		prog_exit_progmode();
-		return 1;
-		}
-	//ah, I need to unify programming interfaces for PIC16 and PIC18
-	if (chip_family==CF_P18F_A)
-		{
-		if (program==1)
-			{
-			pages_performed = 0;
-			p18a_mass_erase();
-			printf ("Programming FLASH (%d B in %d pages per %d bytes): \n",flash_size,flash_size/page_size,page_size);
-			fflush(stdout); 
-			for (i=0;i<flash_size;i=i+page_size)
-				{
-				if (verbose>1) 
-					{
-					printf (".");
-					fflush(stdout); 
-					}
-				if (is_empty(progmem+i,page_size)==0) 
-					{
-					p18a_write_page(progmem+i,i,page_size);
-					pages_performed++;
-					}
-				}
-			printf ("%d pages programmed\n",pages_performed);
-			printf ("Programming config\n");
-			for (i=0;i<16;i=i+2)
-				p18a_write_cfg(config_bytes[i],config_bytes[i+1],0x300000+i);
-			}
-		if (verify==1)
-			{
-			pages_performed = 0;
-			printf ("Verifying FLASH (%d B in %d pages per %d bytes): \n",flash_size,flash_size/page_size,page_size);
-			for (i=0;i<flash_size;i=i+page_size)
-				{
-				if (is_empty(progmem+i,page_size))
-					{
-					if (verbose>2) 
-						{	
-						printf ("#");
-						fflush(stdout); 
-						}		
-					}	
-				else
-					{
-					p18a_read_page(tdat,i,page_size);
-					pages_performed++;
-					if (verbose>3) printf ("Verifying page at 0x%4.4X\n",i);
-					if (verbose>1) 
-						{
-						printf (".");
-						fflush(stdout); 
-						}
-					for (j=0;j<page_size;j++)
-						{
-						if (progmem[i+j] != tdat[j])
-							{
-							printf ("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n",i+j,progmem[i+j],tdat[j]);
-							printf ("Exiting now\n");
-							prog_exit_progmode();
-							exit(0);
-							}
-						}
-					}
-				}
-			printf ("%d pages verified\n",pages_performed);
-			}
-		}
-	else
-	{
-	if (program==1)
-		{
-		p16a_mass_erase();
-		p16a_rst_pointer();
-
-		printf ("Programming FLASH (%d B in %d pages)",flash_size,flash_size/page_size);
-		fflush(stdout); 
-		for (i=0;i<flash_size;i=i+page_size)
-			{
-			if (verbose>1) 
-				{
-				printf (".");
-				fflush(stdout); 
-				}
-			p16a_program_page(i,page_size);
-			}
-		printf ("\n");
-		printf ("Programming config\n");
-		p16a_program_config();
-		}
-	if (verify==1)
-		{
-		printf ("Verifying FLASH (%d B in %d pages)",flash_size,flash_size/page_size);
-		fflush(stdout); 
-		p16a_rst_pointer();
-		for (i=0;i<flash_size;i=i+page_size)
-			{
-			if (verbose>1) 
-				{
-				printf (".");
-				fflush(stdout); 
-				}
-			p16a_read_page(tdat,page_size);
-			for (j=0;j<page_size;j++)
-				{
-				if (file_image[i+j] != tdat[j])
-					{
-					printf ("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n",i+j,file_image[i+j],tdat[j]);
-					prog_exit_progmode();
-					exit(0);
-					}
-				}
-			}
-		printf ("\n");
-		printf ("Verifying config\n");
-		config = p16a_get_config(7);
-		econfig = (((unsigned int)(file_image[2*0x8007]))<<0) + (((unsigned int)(file_image[2*0x8007+1]))<<8);
-
-		if (config==econfig) 
-			{
-			if (verbose>1) printf ("config 1 OK: %4.4X\n",config);
-			}
-		else	printf ("config 1 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
-		config = p16a_get_config(8);
-		econfig = (((unsigned int)(file_image[2*0x8008]))<<0) + (((unsigned int)(file_image[2*0x8008+1]))<<8);
-		if (config==econfig) 
-			{
-			if (verbose>1) printf ("config 2 OK: %4.4X\n",config);
-			}
-		else	printf ("config 2 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
-		}
-	}
-	prog_exit_progmode();
-	return 0;
-	}
-
-	
-	/*
-//this is how main looked for PIC16 only
-int main(int argc, char *argv[]) 
-	{
-	unsigned char tdat[128];
-	int i,j,devid,config,econfig;
-	i = 5;
-
-	printf ("\n");
-	
-	parseArgs(argc,argv);
-	printf ("Opening serial port\n");
-	initSerialPort();
-	
-	if (sleep_time>0)
-		{
-		printf ("Sleeping for %d ms\n", sleep_time);
-		fflush(stdout);
-		sleep_ms (sleep_time);
-		}
-
-	char* filename=argv[argc-1];
-	if (verbose>2) printf ("Opening filename %s \n", filename);
-	FILE* sf = fopen(filename, "rb");
-	if (sf!=0)
-		{
-		if (verbose>2) printf ("File open\n");
-		fread(file_image, 70000, 1, sf);
-		fclose(sf);
-		}
-	else
-		printf ("Error opening file \n");
-	for (i=0;i<70000;i++)
-		{
-		if ((i%2)!=0) 
-			file_image[i] = 0x3F&file_image[i];
-		}
-
-	
-	enter_progmode();
-	
-	devid = get_devid();
-	if (devid_expected == (devid&devid_mask))
-		printf ("Device ID 0x%4.4X\n",devid);
-	else
-		printf ("Unexpected device ID 0x%4.4X\n",devid);
-	
-
-	if (program==1)
-		{
-		mass_erase();
-		rst_pointer();
-
-		printf ("Programming FLASH (%d B in %d pages)",flash_size,flash_size/page_size);
-		fflush(stdout); 
-		for (i=0;i<flash_size;i=i+page_size)
-			{
-			if (verbose>1) 
-				{
-				printf (".");
-				fflush(stdout); 
-				}
-			program_page(i,page_size);
-			}
-		printf ("\n");
-		printf ("Programming config\n");
-		program_config();
-		}
-	if (verify==1)
-		{
-		printf ("Verifying FLASH (%d B in %d pages)",flash_size,flash_size/page_size);
-		fflush(stdout); 
-		rst_pointer();
-		for (i=0;i<flash_size;i=i+page_size)
-			{
-			if (verbose>1) 
-				{
-				printf (".");
-				fflush(stdout); 
-				}
-			read_page(tdat,page_size);
-			for (j=0;j<page_size;j++)
-				{
-				if (file_image[i+j] != tdat[j])
-					{
-					printf ("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n",i+j,file_image[i+j],tdat[j]);
-					exit_progmode();
-					exit(0);
-					}
-				}
-			}
-		printf ("\n");
-		printf ("Verifying config\n");
-		config = get_config(7);
-		econfig = (((unsigned int)(file_image[2*0x8007]))<<0) + (((unsigned int)(file_image[2*0x8007+1]))<<8);
-
-		if (config==econfig) 
-			{
-			if (verbose>1) printf ("config 1 OK: %4.4X\n",config);
-			}
-		else	printf ("config 1 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
-		config = get_config(8);
-		econfig = (((unsigned int)(file_image[2*0x8008]))<<0) + (((unsigned int)(file_image[2*0x8008+1]))<<8);
-		if (config==econfig) 
-			{
-			if (verbose>1) printf ("config 2 OK: %4.4X\n",config);
-			}
-		else	printf ("config 2 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
-		}
-		
-	printf ("Releasing MCLR\n");
-	exit_progmode();
-
-	return 0;
-	}
-*/

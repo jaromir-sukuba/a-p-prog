@@ -250,6 +250,12 @@ int main (void)
           usart_tx_b (0x94);
           rx_state = 0;
           }  
+        if (rx_message[0]==0x23)
+          {
+          p18fj_isp_mass_erase();
+          usart_tx_b (0xA3);
+          rx_state = 0;
+          }
         }
       }      
     }
@@ -449,6 +455,7 @@ _delay_us(300);
 ISP_MCLR_1
 }
 
+
 void p18_isp_mass_erase (void)
 {
 p18_set_tblptr(0x3C0005);
@@ -460,6 +467,20 @@ isp_send(0x00,4);
 _delay_ms(20);
 isp_send(0x00,16);
 }
+
+void p18fj_isp_mass_erase (void)
+{
+p18_set_tblptr(0x3C0005);
+p18_send_cmd_payload(0x0C,0x0101);
+p18_set_tblptr(0x3C0004);
+p18_send_cmd_payload(0x0C,0x8080);
+p18_send_cmd_payload(0,0x0000);
+isp_send(0x00,4);
+_delay_ms(600);
+isp_send(0x00,16);
+}
+
+
 
 void p18_isp_write_pgm (unsigned int * data, unsigned long addr, unsigned char n)
 {
@@ -647,6 +668,7 @@ usart_tx_b('x');
   usart_tx_hexa_8b(value&0xFF);
   usart_tx_b(' ');
 }
+
 
 
 

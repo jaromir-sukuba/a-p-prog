@@ -121,6 +121,14 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16F1507   | YES    | 
 | PIC16F1508   |        | 
 | PIC16F1509   | YES    | 
+| PIC16F1512   |        | 
+| PIC16F1513   |        | 
+| PIC16F1516   | YES    | 
+| PIC16F1517   |        | 
+| PIC16F1518   |        | 
+| PIC16F1519   |        | 
+| PIC16F1528   |        | 
+| PIC16F1529   |        | 
 | PIC16F1574   |        | 
 | PIC16F1575   | YES    | 
 | PIC16F1578   |        | 
@@ -130,6 +138,13 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16F1615   | YES    | 
 | PIC16F1618   |        | 
 | PIC16F1619   |        | 
+| PIC16F1782   |        | 
+| PIC16F1783   | YES    | 
+| PIC16F1784   |        | 
+| PIC16F1786   |        | 
+| PIC16F1787   |        | 
+| PIC16F1788   |        | 
+| PIC16F1789   |        | 
 | PIC16F1824   |        | 
 | PIC16F1825   |        | 
 | PIC16F1826   |        | 
@@ -137,6 +152,14 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16F1828   |        | 
 | PIC16F1829   | YES    | 
 | PIC16F1847   |        | 
+| PIC16F1933   |        | 
+| PIC16F1934   |        | 
+| PIC16F1936   |        | 
+| PIC16F1937   |        | 
+| PIC16F1938   |        | 
+| PIC16F1939   |        | 
+| PIC16F1946   |        | 
+| PIC16F1947   |        | 
 | PIC16LF1454  |        | 
 | PIC16LF1455  |        | 
 | PIC16LF1459  |        | 
@@ -144,6 +167,14 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16LF1507  |        | 
 | PIC16LF1508  |        | 
 | PIC16LF1509  |        | 
+| PIC16LF1512  |        | 
+| PIC16LF1513  |        | 
+| PIC16LF1516  |        | 
+| PIC16LF1517  |        | 
+| PIC16LF1518  |        | 
+| PIC16LF1519  |        | 
+| PIC16LF1528  |        | 
+| PIC16LF1529  |        | 
 | PIC16LF1574  |        | 
 | PIC16LF1575  |        | 
 | PIC16LF1578  |        | 
@@ -153,6 +184,13 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16LF1615  |        | 
 | PIC16LF1618  |        | 
 | PIC16LF1619  |        | 
+| PIC16LF1782  |        | 
+| PIC16LF1783  |        | 
+| PIC16LF1784  |        | 
+| PIC16LF1786  |        | 
+| PIC16LF1787  |        | 
+| PIC16LF1788  |        | 
+| PIC16LF1789  |        | 
 | PIC16LF1824  |        | 
 | PIC16LF1825  |        | 
 | PIC16LF1826  |        | 
@@ -160,16 +198,42 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16LF1828  |        | 
 | PIC16LF1829  | YES    | 
 | PIC16LF1847  |        | 
+| PIC16LF1902  |        | 
+| PIC16LF1903  |        | 
+| PIC16LF1904  |        | 
+| PIC16LF1906  |        | 
+| PIC16LF1907  |        | 
+| PIC16LF1933  |        | 
+| PIC16LF1934  |        | 
+| PIC16LF1936  |        | 
+| PIC16LF1937  |        | 
+| PIC16LF1938  |        | 
+| PIC16LF1939  |        | 
+| PIC16LF1946  |        | 
+| PIC16LF1947  |        | 
+| PIC18F24J50  |        | 
+| PIC18F25J50  |        | 
 | PIC18F25K22  |        | 
 | PIC18F25K50  | YES    | 
+| PIC18F26J50  | YES    | 
 | PIC18F26K22  |        | 
+| PIC18F44J50  |        | 
+| PIC18F45J50  |        | 
 | PIC18F45K22  |        | 
+| PIC18F46J50  |        | 
 | PIC18F46K22  |        | 
+| PIC18LF24J50 |        | 
+| PIC18LF25J50 |        | 
 | PIC18LF25K22 |        | 
 | PIC18LF25K50 | YES    | 
+| PIC18LF26J50 |        | 
 | PIC18LF26K22 |        | 
+| PIC18LF44J50 |        | 
+| PIC18LF45J50 |        | 
 | PIC18LF45K22 |        | 
+| PIC18LF46J50 |        | 
 | PIC18LF46K22 |        | 
+
 
 
 
