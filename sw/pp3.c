@@ -20,6 +20,8 @@ int parse_hex (char * filename, unsigned char * progmem, unsigned char * config)
 char* COM = "";
 //char* COM = "/dev/ttyS0";
 
+char * PP_VERSION = "0.9";
+
 
 #define	PROGMEM_LEN	260000
 #define	CONFIG_LEN	32
@@ -101,6 +103,7 @@ void initSerialPort() {
 	opts.c_oflag &=  ~OPOST;
 	
 	opts.c_iflag &=  ~INPCK;
+	opts.c_iflag &=  ~ICRNL;		//do NOT translate CR to NL
 	opts.c_iflag &=  ~(IXON | IXOFF | IXANY);	
 	opts.c_cc[ VMIN ] = 0;
 	opts.c_cc[ VTIME ] = 10;//0.1 sec
@@ -236,22 +239,6 @@ void sleep_ms (int num)
 	nanosleep(&tspec,0);
 }
 	
-		
-/*	
-int getIntArg(char* arg) {
-	if (strlen(arg)>=2 && memcmp(arg,"0x",2)==0) {
-		unsigned int u;
-		sscanf(arg+2,"%X",&u);
-		return u;
-		}
-	else {
-		int d;
-		sscanf(arg,"%d",&d);
-		return d;
-		}
-	}
-	*/
-
 void printHelp() {
 		flsprintf(stdout,"pp programmer\n");
 	exit(0);
@@ -420,7 +407,7 @@ int p18a_read_page (unsigned char * data, int address, unsigned char num)
 {
 unsigned char i;
 	if (verbose>2)
-		flsprintf(stdout,"Reading page of %d bytes at 0x%4.4x\n", num, address);
+		flsprintf(stdout,"Reading page of %d bytes at 0x%6.6x\n", num, address);
 putByte(0x11);
 putByte(0x04);
 putByte(num/2);
@@ -472,7 +459,7 @@ if (verbose>3)
 	return 0;
 }
 if (verbose>2)
-	flsprintf(stdout,"Writing page of %d bytes at 0x%4.4x\n", num, address);
+	flsprintf(stdout,"Writing page of %d bytes at 0x%6.6x\n", num, address);
 putByte(0x12);
 putByte(4+num);
 putByte(num);
@@ -611,6 +598,7 @@ int parse_hex (char * filename, unsigned char * progmem, unsigned char * config)
     int read;
     int p16_cfg = 0;
 	int line_pointer, line_len, line_type, line_address, line_address_offset;
+	int effective_address;
 	if (verbose>2) printf ("Opening filename %s \n", filename);
 	FILE* sf = fopen(filename, "r");
 	if (sf==0)
@@ -633,7 +621,8 @@ int parse_hex (char * filename, unsigned char * progmem, unsigned char * config)
 		sscanf(line+1,"%2X",&line_len);
 		sscanf(line+3,"%4X",&line_address);
 		sscanf(line+7,"%2X",&line_type);
-		if (verbose>2) printf("Line len %d B, type %d, address 0x%4.4x offset 0x%4.4x\n",line_len,line_type,line_address,line_address_offset);
+		effective_address = line_address+(65536*line_address_offset);
+		if (verbose>2) printf("Line len %d B, type %d, address 0x%4.4x offset 0x%4.4x, EFF 0x%6.6x\n",line_len,line_type,line_address,line_address_offset,effective_address);
 		if (line_type==0)
 			{
 			for (i=0;i<line_len;i++)
@@ -641,17 +630,17 @@ int parse_hex (char * filename, unsigned char * progmem, unsigned char * config)
 				sscanf(line+9+i*2,"%2X",&temp);
 				line_content[i] = temp;
 				}
-			if ((line_address_offset==0)&(line_address<flash_size))
+			if (effective_address<flash_size)
 				{
 				if (verbose>2) printf("PM ");
-				for (i=0;i<line_len;i++) progmem[line_address+i] = line_content[i];
+				for (i=0;i<line_len;i++) progmem[effective_address+i] = line_content[i];
 				}
 			if ((line_address_offset==0x30)&(chip_family==CF_P18F_A))
 				{
 				if (verbose>2) printf("CB ");
 				for (i=0;i<line_len;i++) config[i] = line_content[i];
 				}
-			if ((chip_family==CF_P18F_B)&(line_address==(flash_size-8)))
+			if ((chip_family==CF_P18F_B)&(effective_address==(flash_size-8)))
 				{
 				if (verbose>2) printf("CB ");
 				for (i=0;i<line_len;i++) config[i] = line_content[i];
@@ -688,6 +677,7 @@ int main(int argc, char *argv[])
 	unsigned char * pm_point, * cm_point;
 	unsigned char tdat[200];
 	parseArgs(argc,argv);
+	printf ("PP programmer, version %s\n",PP_VERSION);
 	printf ("Opening serial port\n");
 	initSerialPort();
 	if (sleep_time>0)
@@ -1013,24 +1003,11 @@ int main(int argc, char *argv[])
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void setCPUtype(char* cpu) 
 {
+	int i,len;
+	len = strlen (cpu);
+	for(i = 0; i<len; i++) cpu[i] = tolower(cpu[i]);
 	if (strcmp("16f1507",cpu)==0) 
 		{
 		flash_size = 4096;		//bytes, where 1word = 2bytes, though actually being 14 bits
@@ -1904,10 +1881,74 @@ void setCPUtype(char* cpu)
 		devid_mask = 0xFFE0;
 		chip_family = CF_P18F_A;
 		}
-		
+
+	else if (strcmp("18f23k22",cpu)==0) 
+		{
+		flash_size = 8192; 
+		page_size = 64; 
+		devid_expected = 0x5740;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_A;
+		}
+	else if (strcmp("18f24k22",cpu)==0) 
+		{
+		flash_size = 16384; 
+		page_size = 64; 
+		devid_expected = 0x5640;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_A;
+		}
+	else if (strcmp("18lf23k22",cpu)==0) 
+		{
+		flash_size = 8192; 
+		page_size = 64; 
+		devid_expected = 0x5760;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_A;
+		}
+	else if (strcmp("18lf24k22",cpu)==0) 
+		{
+		flash_size = 16384; 
+		page_size = 64; 
+		devid_expected = 0x5660;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_A;
+		}
+	else if (strcmp("18f43k22",cpu)==0) 
+		{
+		flash_size = 8192; 
+		page_size = 64; 
+		devid_expected = 0x5700;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_A;
+		}
+	else if (strcmp("18f44k22",cpu)==0) 
+		{
+		flash_size = 16384; 
+		page_size = 64; 
+		devid_expected = 0x5600;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_A;
+		}
+	else if (strcmp("18lf43k22",cpu)==0) 
+		{
+		flash_size = 8192; 
+		page_size = 64; 
+		devid_expected = 0x5720;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_A;
+		}
+	else if (strcmp("18lf44k22",cpu)==0) 
+		{
+		flash_size = 16384; 
+		page_size = 64; 
+		devid_expected = 0x5620;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_A;
+		}		
 	else if (strcmp("18f46k22",cpu)==0) 
 		{
-		flash_size = 32768; 
+		flash_size = 65536; 
 		page_size = 64; 
 		devid_expected = 0x5400;
 		devid_mask = 0xFFE0;
@@ -1915,7 +1956,7 @@ void setCPUtype(char* cpu)
 		}
 	else if (strcmp("18f26k22",cpu)==0) 
 		{
-		flash_size = 32768; 
+		flash_size = 65536; 
 		page_size = 64; 
 		devid_expected = 0x5440;
 		devid_mask = 0xFFE0;
@@ -1923,7 +1964,7 @@ void setCPUtype(char* cpu)
 		}
 	else if (strcmp("18f45k22",cpu)==0) 
 		{
-		flash_size = 16384; 
+		flash_size = 32768; 
 		page_size = 64; 
 		devid_expected = 0x5500;
 		devid_mask = 0xFFE0;
@@ -1931,7 +1972,7 @@ void setCPUtype(char* cpu)
 		}
 	else if (strcmp("18f25k22",cpu)==0) 
 		{
-		flash_size = 16384; 
+		flash_size = 32768; 
 		page_size = 64; 
 		devid_expected = 0x5540;
 		devid_mask = 0xFFE0;
@@ -1939,7 +1980,7 @@ void setCPUtype(char* cpu)
 		}
 	else if (strcmp("18lf46k22",cpu)==0) 
 		{
-		flash_size = 32768; 
+		flash_size = 65536; 
 		page_size = 64; 
 		devid_expected = 0x5420;
 		devid_mask = 0xFFE0;
@@ -1947,7 +1988,7 @@ void setCPUtype(char* cpu)
 		}
 	else if (strcmp("18lf26k22",cpu)==0) 
 		{
-		flash_size = 32768; 
+		flash_size = 65536; 
 		page_size = 64; 
 		devid_expected = 0x5460;
 		devid_mask = 0xFFE0;
@@ -1955,7 +1996,7 @@ void setCPUtype(char* cpu)
 		}
 	else if (strcmp("18lf45k22",cpu)==0) 
 		{
-		flash_size = 16384; 
+		flash_size = 32768; 
 		page_size = 64; 
 		devid_expected = 0x5520;
 		devid_mask = 0xFFE0;
@@ -1963,13 +2004,12 @@ void setCPUtype(char* cpu)
 		}
 	else if (strcmp("18lf25k22",cpu)==0) 
 		{
-		flash_size = 16384; 
+		flash_size = 32768; 
 		page_size = 64; 
 		devid_expected = 0x5560;
 		devid_mask = 0xFFE0;
 		chip_family = CF_P18F_A;
 		}
-		
 
 	else if (strcmp("18f24j50",cpu)==0) 
 		{
@@ -2067,9 +2107,311 @@ void setCPUtype(char* cpu)
 		devid_mask = 0xFFE0;
 		chip_family = CF_P18F_B;
 		}		
+
+
+
+
+
+
+	else if (strcmp("18f24j11",cpu)==0) 
+		{
+		flash_size = 16384; 
+		page_size = 64; 
+		devid_expected = 0x4D80;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18f25j11",cpu)==0) 
+		{
+		flash_size = 32768; 
+		page_size = 64; 
+		devid_expected = 0x4DA0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18f26j11",cpu)==0) 
+		{
+		flash_size = 65536; 
+		page_size = 64; 
+		devid_expected = 0x4DC0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18f44j11",cpu)==0) 
+		{
+		flash_size = 16384; 
+		page_size = 64; 
+		devid_expected = 0x4DE0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18f45j11",cpu)==0) 
+		{
+		flash_size = 32768; 
+		page_size = 64; 
+		devid_expected = 0x4E00;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18f46j11",cpu)==0) 
+		{
+		flash_size = 65536; 
+		page_size = 64; 
+		devid_expected = 0x4E20;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18lf24j11",cpu)==0) 
+		{
+		flash_size = 16384; 
+		page_size = 64; 
+		devid_expected = 0x4E40;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18lf25j11",cpu)==0) 
+		{
+		flash_size = 32768; 
+		page_size = 64; 
+		devid_expected = 0x4E60;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18lf26j11",cpu)==0) 
+		{
+		flash_size = 65536; 
+		page_size = 64; 
+		devid_expected = 0x4E80;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18lf44j11",cpu)==0) 
+		{
+		flash_size = 16384; 
+		page_size = 64; 
+		devid_expected = 0x4EA0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18lf45j11",cpu)==0) 
+		{
+		flash_size = 32768; 
+		page_size = 64; 
+		devid_expected = 0x4EC0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18lf46j11",cpu)==0) 
+		{
+		flash_size = 65536; 
+		page_size = 64; 
+		devid_expected = 0x4EE0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}				
+	else if (strcmp("18f24j10",cpu)==0) 
+		{
+		flash_size = 16384; 
+		page_size = 64; 
+		devid_expected = 0x1D00;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}				
+	else if (strcmp("18f25j10",cpu)==0) 
+		{
+		flash_size = 32768; 
+		page_size = 64; 
+		devid_expected = 0x1C00;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}				
+	else if (strcmp("18f44j10",cpu)==0) 
+		{
+		flash_size = 16384; 
+		page_size = 64; 
+		devid_expected = 0x1D20;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}				
+	else if (strcmp("18f45j10",cpu)==0) 
+		{
+		flash_size = 32768; 
+		page_size = 64; 
+		devid_expected = 0x1C20;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}				
+	else if (strcmp("18lf24j10",cpu)==0) 
+		{
+		flash_size = 16384; 
+		page_size = 64; 
+		devid_expected = 0x1D40;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}				
+	else if (strcmp("18lf25j10",cpu)==0) 
+		{
+		flash_size = 32768; 
+		page_size = 64; 
+		devid_expected = 0x1C40;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}				
+	else if (strcmp("18lf44j10",cpu)==0) 
+		{
+		flash_size = 16384; 
+		page_size = 64; 
+		devid_expected = 0x1D60;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}				
+	else if (strcmp("18lf45j10",cpu)==0) 
+		{
+		flash_size = 32768; 
+		page_size = 64; 
+		devid_expected = 0x1C60;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}			
+	else if (strcmp("18lf45j10",cpu)==0) 
+		{
+		flash_size = 32768; 
+		page_size = 64; 
+		devid_expected = 0x1C60;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}			
+	
+	else if (strcmp("18f26j13",cpu)==0) 
+		{
+		flash_size = 65536; 
+		page_size = 64; 
+		devid_expected = 0x5920;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}			
+	else if (strcmp("18f27j13",cpu)==0) 
+		{
+		flash_size = 131072; 
+		page_size = 64; 
+		devid_expected = 0x5960;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}			
+	else if (strcmp("18f46j13",cpu)==0) 
+		{
+		flash_size = 65536; 
+		page_size = 64; 
+		devid_expected = 0x59A0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}			
+	else if (strcmp("18f47j13",cpu)==0) 
+		{
+		flash_size = 131072; 
+		page_size = 64; 
+		devid_expected = 0x59E0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}	
+	else if (strcmp("18lf26j13",cpu)==0) 
+		{
+		flash_size = 65536; 
+		page_size = 64; 
+		devid_expected = 0x5B20;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}			
+	else if (strcmp("18lf27j13",cpu)==0) 
+		{
+		flash_size = 131072; 
+		page_size = 64; 
+		devid_expected = 0x5B60;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}			
+	else if (strcmp("18lf46j13",cpu)==0) 
+		{
+		flash_size = 65536; 
+		page_size = 64; 
+		devid_expected = 0x5BA0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}			
+	else if (strcmp("18lf47j13",cpu)==0) 
+		{
+		flash_size = 131072; 
+		page_size = 64; 
+		devid_expected = 0x5BE0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}		
+	else if (strcmp("18f26j53",cpu)==0) 
+		{
+		flash_size = 65536; 
+		page_size = 64; 
+		devid_expected = 0x5820;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}			
+	else if (strcmp("18f27j53",cpu)==0) 
+		{
+		flash_size = 131072; 
+		page_size = 64; 
+		devid_expected = 0x5860;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}			
+	else if (strcmp("18f46j53",cpu)==0) 
+		{
+		flash_size = 65536; 
+		page_size = 64; 
+		devid_expected = 0x58A0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}			
+	else if (strcmp("18f47j53",cpu)==0) 
+		{
+		flash_size = 131072; 
+		page_size = 64; 
+		devid_expected = 0x58E0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}	
+	else if (strcmp("18lf26j53",cpu)==0) 
+		{
+		flash_size = 65536; 
+		page_size = 64; 
+		devid_expected = 0x5A20;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}			
+	else if (strcmp("18lf27j53",cpu)==0) 
+		{
+		flash_size = 131072; 
+		page_size = 64; 
+		devid_expected = 0x5A60;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}			
+	else if (strcmp("18lf46j53",cpu)==0) 
+		{
+		flash_size = 65536; 
+		page_size = 64; 
+		devid_expected = 0x5AA0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}			
+	else if (strcmp("18lf47j53",cpu)==0) 
+		{
+		flash_size = 131072; 
+		page_size = 64; 
+		devid_expected = 0x5AE0;
+		devid_mask = 0xFFE0;
+		chip_family = CF_P18F_B;
+		}			
 		
-		
-		
+				
 	else {
 		flsprintf(stderr,"Unsupported CPU type '%s'\n",cpu);
 		abort();

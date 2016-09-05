@@ -199,7 +199,7 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16LF1829  | YES    | 
 | PIC16LF1847  |        | 
 | PIC16LF1902  |        | 
-| PIC16LF1903  |        | 
+| PIC16LF1903  | YES    | 
 | PIC16LF1904  |        | 
 | PIC16LF1906  |        | 
 | PIC16LF1907  |        | 
@@ -211,28 +211,73 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16LF1939  |        | 
 | PIC16LF1946  |        | 
 | PIC16LF1947  |        | 
-| PIC18F24J50  |        | 
+| PIC18F23K22  |        | 
+| PIC18F24J10  |        | 
+| PIC18F24J11  |        | 
+| PIC18F24J50  | YES    | 
+| PIC18F24K22  | YES    | 
+| PIC18F25J10  |        | 
+| PIC18F25J11  |        | 
 | PIC18F25J50  |        | 
 | PIC18F25K22  |        | 
 | PIC18F25K50  | YES    | 
+| PIC18F26J11  | YES    | 
+| PIC18F26J13  |        | 
 | PIC18F26J50  | YES    | 
-| PIC18F26K22  |        | 
+| PIC18F26J53  |        | 
+| PIC18F26K22  | YES    | 
+| PIC18F27J13  |        | 
+| PIC18F27J53  | YES    | 
+| PIC18F43K22  |        | 
+| PIC18F44J10  |        | 
+| PIC18F44J11  |        | 
 | PIC18F44J50  |        | 
+| PIC18F44K22  |        | 
+| PIC18F45J10  |        | 
+| PIC18F45J11  |        | 
 | PIC18F45J50  |        | 
 | PIC18F45K22  |        | 
+| PIC18F46J11  |        | 
+| PIC18F46J13  |        | 
 | PIC18F46J50  |        | 
+| PIC18F46J53  |        | 
 | PIC18F46K22  |        | 
+| PIC18F47J13  |        | 
+| PIC18F47J53  |        | 
+| PIC18LF23K22 |        | 
+| PIC18LF24J10 |        | 
+| PIC18LF24J11 |        | 
 | PIC18LF24J50 |        | 
+| PIC18LF24K22 |        | 
+| PIC18LF25J10 |        | 
+| PIC18LF25J11 |        | 
 | PIC18LF25J50 |        | 
 | PIC18LF25K22 |        | 
 | PIC18LF25K50 | YES    | 
+| PIC18LF26J11 |        | 
+| PIC18LF26J13 |        | 
 | PIC18LF26J50 |        | 
+| PIC18LF26J53 |        | 
 | PIC18LF26K22 |        | 
+| PIC18LF27J13 |        | 
+| PIC18LF27J53 |        | 
+| PIC18LF43K22 |        | 
+| PIC18LF44J10 |        | 
+| PIC18LF44J11 |        | 
 | PIC18LF44J50 |        | 
+| PIC18LF44K22 |        | 
+| PIC18LF45J10 |        | 
+| PIC18LF45J11 |        | 
 | PIC18LF45J50 |        | 
 | PIC18LF45K22 |        | 
+| PIC18LF46J11 |        | 
+| PIC18LF46J13 |        | 
 | PIC18LF46J50 |        | 
+| PIC18LF46J53 |        | 
 | PIC18LF46K22 |        | 
+| PIC18LF47J13 |        | 
+| PIC18LF47J53 |        | 
+
 
 
 

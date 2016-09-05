@@ -1,0 +1,44 @@
+2015-12-23
+- version 0.0
+- PIC16F1829, PIC16F1825, PIC16LF1829 and PIC16LF1825 supported
+
+2016-01-18
+- version 0.0
+- 16F1507, 1508 and LF variants added
+
+2016-04-01
+- version 0.0
+- 18F25K50 added
+- hex file support
+
+2016-07-26
+- version 0.0
+- PIC18 bugs fixed
+- 12F1571, 1572 and its LF variants added
+
+2016-07-29
+- version 0.0
+- a lot of devices added and tested, 42 devices in total supported
+
+2016-07-30
+- version 0.0
+- PIC12F18xx fixed
+- a fex PIC16F devices tested
+
+2016-08-05
+- version 0.0
+- PIC16F1619 and 1579 families added
+- 68 devices supported
+
+2016-08-16
+- version 0.0
+- 16F151x, 16F178x, 16F19xx families added
+- PIC18FxxJxx family added
+- 131 devices supported
+
+2016-09-05
+- version 0.9 (finally some sensible release number, 1.0 release is near)
+- a lot of PIC18FxxJxx devices added
+- bugfixes around serial port, hex file parsing and PIC18FxxKxx support
+- PIC type in command line is now case insensitive
+- 175 devices supported
