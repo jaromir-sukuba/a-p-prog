@@ -42,3 +42,10 @@
 - bugfixes around serial port, hex file parsing and PIC18FxxKxx support
 - PIC type in command line is now case insensitive
 - 175 devices supported
+
+2016-09-06
+- version 0.91 (previous should be 0.90, then)
+- improved programming speed, especially at windows (improved serial port handling)
+- some more intelligence in PIC16 programming, results in faster programming
+- PIC16F17xx devices added, 205 devices supported now
+

@@ -1,3 +1,10 @@
+/*
+ * pp programmer, for SW 0.91 and higher
+ * 
+ * 
+ */
+
+
 #include <avr/io.h>
 #include <util/delay.h>
 
@@ -24,7 +31,7 @@
 #define  ISP_CLK_D_I ISP_DDR &= ~(1<<ISP_CLK);
 #define  ISP_CLK_D_0 ISP_DDR |= (1<<ISP_CLK);
 
-#define  ISP_CLK_DELAY  3
+#define  ISP_CLK_DELAY  1
 void isp_send (unsigned int data, unsigned char n);
 unsigned int isp_read_16 (void);
 unsigned char enter_progmode (void);
@@ -201,9 +208,9 @@ int main (void)
           {
           for (i=0;i<rx_message[2]/2;i++)
             {
-            flash_buffer[i] = (((unsigned int)(rx_message[(2*i)+1+3]))<<8) + (((unsigned int)(rx_message[(2*i)+0+3]))<<0);
+            flash_buffer[i] = (((unsigned int)(rx_message[(2*i)+1+4]))<<8) + (((unsigned int)(rx_message[(2*i)+0+4]))<<0);
             }
-          isp_write_pgm(flash_buffer,rx_message[2]/2);
+          isp_write_pgm(flash_buffer,rx_message[2]/2,rx_message[3]);
           usart_tx_b (0x88);
           rx_state = 0;
           }
@@ -303,7 +310,7 @@ for (i=0;i<n;i++)
 
 
 
-void isp_write_pgm (unsigned int * data, unsigned char n)
+void isp_write_pgm (unsigned int * data, unsigned char n, unsigned char slow)
 {
 unsigned char i;
 //_delay_us(3*ISP_CLK_DELAY);
@@ -315,7 +322,10 @@ for (i=0;i<n;i++)
     isp_send(0x06,6);
   }
 isp_send(0x08,6);
-_delay_ms(5);
+if (slow==1)
+  _delay_ms(5);
+else
+  _delay_ms(2);
 isp_send(0x06,6);
 }
 

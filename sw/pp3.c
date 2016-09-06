@@ -20,7 +20,7 @@ int parse_hex (char * filename, unsigned char * progmem, unsigned char * config)
 char* COM = "";
 //char* COM = "/dev/ttyS0";
 
-char * PP_VERSION = "0.9";
+char * PP_VERSION = "0.91";
 
 
 #define	PROGMEM_LEN	260000
@@ -127,7 +127,7 @@ void initSerialPort() {
 	}
 
 	
-	void putByte(int byte) {
+void putByte(int byte) {
 	char buf = byte;
 	if (verbose>3)
 		flsprintf(stdout,"TX: 0x%02X\n", byte);
@@ -135,6 +135,22 @@ void initSerialPort() {
 	if (n != 1)
 		comErr("Serial port failed to send a byte, write returned %d\n", n);
 	}
+	
+	
+void putBytes (unsigned char * data, int len)
+{
+
+int i;
+for (i=0;i<len;i++)	
+	putByte(data[i]);
+/*
+	if (verbose>3)
+		flsprintf(stdout,"TXP: %d B\n", len);
+int n = write(com, data, len);
+	if (n != len)
+		comErr("Serial port failed to send %d bytes, write returned %d\n", len,n);
+*/
+}
 	
 int getByte() {
 	char buf;
@@ -214,6 +230,21 @@ void putByte(int byte)
   	if (n != 1)
 		comErr("Serial port failed to send a byte, write returned %d\n", n);
 }
+
+void putBytes (unsigned char * data, int len)
+{
+/*
+int i;
+for (i=0;i<len;i++)	
+	putByte(data[i]);
+*/
+  int n;
+  WriteFile(port_handle, data, len, (LPDWORD)((void *)&n), NULL);
+  if (n != len)
+	comErr("Serial port failed to send a byte, write returned %d\n", n);
+}
+
+
 	
 int getByte() 
 {
@@ -327,17 +358,21 @@ int p16a_inc_pointer (unsigned char num)
 	}
 
 
-int p16a_program_page (unsigned int ptr, unsigned char num)
+int p16a_program_page (unsigned int ptr, unsigned char num, unsigned char slow)
 	{
-	unsigned char i;
+//	unsigned char i;
 	if (verbose>2)
-		flsprintf(stdout,"Programming page of %d bytes at %d\n", num,ptr);
-
+		flsprintf(stdout,"Programming page of %d bytes at 0x%4.4x\n", num,ptr);
+	
 	putByte(0x08);
-	putByte(num+1);
+	putByte(num+2);
 	putByte(num);
+	putByte(slow);
+	/*
 	for (i=0;i<num;i++)
 		putByte(file_image[ptr+i]);
+		*/
+	putBytes(&file_image[ptr],num);
 	getByte();
 	return 0;
 	}
@@ -396,9 +431,9 @@ int p16a_program_config(void)
 p16a_rst_pointer();
 p16a_load_config();
 p16a_inc_pointer(7);
-p16a_program_page(2*0x8007,2);
-p16a_program_page(2*0x8008,2);
-if (chip_family==CF_P16F_B) p16a_program_page(2*0x8009,2);
+p16a_program_page(2*0x8007,2,1);
+p16a_program_page(2*0x8008,2,1);
+if (chip_family==CF_P16F_B) p16a_program_page(2*0x8009,2,1);
 return 0;
 }
 
@@ -474,7 +509,6 @@ return 0;
 
 int p18a_write_cfg (unsigned char data1, unsigned char data2, int address)
 {
-unsigned char i;
 if (verbose>2)
 	flsprintf(stdout,"Writing cfg 0x%2.2x 0x%2.2x at 0x%6.6x\n", data1, data2, address);
 putByte(0x14);
@@ -524,7 +558,7 @@ if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B) )
 	return p16a_get_devid();
 else 	if ((chip_family==CF_P18F_A)|(chip_family==CF_P18F_B))
 	{
-	p18a_read_page((char *)&mem_str, 0x3FFFFE, 2);
+	p18a_read_page((unsigned char *)&mem_str, 0x3FFFFE, 2);
 	devid = (((unsigned int)(mem_str[1]))<<8) + (((unsigned int)(mem_str[0]))<<0);
 	devid = devid & devid_mask;
 	return devid;
@@ -597,7 +631,7 @@ int parse_hex (char * filename, unsigned char * progmem, unsigned char * config)
 	int i,temp;
     int read;
     int p16_cfg = 0;
-	int line_pointer, line_len, line_type, line_address, line_address_offset;
+	int line_len, line_type, line_address, line_address_offset;
 	int effective_address;
 	if (verbose>2) printf ("Opening filename %s \n", filename);
 	FILE* sf = fopen(filename, "r");
@@ -673,7 +707,7 @@ return empty;
 
 int main(int argc, char *argv[]) 
 	{
-	int i,j,empty,pages_performed,devid,config,econfig;
+	int i,j,pages_performed,config,econfig;
 	unsigned char * pm_point, * cm_point;
 	unsigned char tdat[200];
 	parseArgs(argc,argv);
@@ -830,7 +864,7 @@ int main(int argc, char *argv[])
 				printf (".");
 				fflush(stdout); 
 				}
-			p16a_program_page(i,page_size);
+			p16a_program_page(i,page_size,0);
 			}
 		printf ("\n");
 		printf ("Programming config\n");
@@ -1002,7 +1036,11 @@ int main(int argc, char *argv[])
 
 
 
-
+/*
+* I'm not exactly happy about this piece of code. Simple, but way too long
+* 1500 lines of code in one function, that is way too much. I should 
+* TODO: rewrite it to table driven search
+*/
 void setCPUtype(char* cpu) 
 {
 	int i,len;
@@ -1862,9 +1900,247 @@ void setCPUtype(char* cpu)
 		chip_family = CF_P16F_A;
 		}
 
+	else if (strcmp("16f1713",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 64;
+		devid_expected = 0x3049;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1716",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x3048;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1717",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 64;
+		devid_expected = 0x305C;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1718",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x305B;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1719",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x305A;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1713",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 64;
+		devid_expected = 0x304B;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1716",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 64;
+		devid_expected = 0x304A;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1717",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 64;
+		devid_expected = 0x305F;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1718",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x305E;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1719",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 64;
+		devid_expected = 0x305D;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
 
-
-
+	else if (strcmp("16f1703",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 16;
+		devid_expected = 0x3061;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1704",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x3043;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1705",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 16;
+		devid_expected = 0x3055;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1707",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 16;
+		devid_expected = 0x3060;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1708",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x3042;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1709",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 16;
+		devid_expected = 0x3054;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1703",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 16;
+		devid_expected = 0x3063;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1704",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x3045;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1705",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 16;
+		devid_expected = 0x3057;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1707",cpu)==0) 
+		{
+		flash_size = 4096;
+		page_size = 16;
+		devid_expected = 0x3062;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1708",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x3044;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1709",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 16;
+		devid_expected = 0x3056;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1764",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x3080;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1765",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 16;
+		devid_expected = 0x3081;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1768",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x3084;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16f1769",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 16;
+		devid_expected = 0x3085;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1764",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x3082;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1765",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 16;
+		devid_expected = 0x3083;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1768",cpu)==0) 
+		{
+		flash_size = 8192;
+		page_size = 16;
+		devid_expected = 0x3086;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
+	else if (strcmp("16lf1769",cpu)==0) 
+		{
+		flash_size = 16384;
+		page_size = 16;
+		devid_expected = 0x3087;
+		devid_mask = 0xFFFF;
+		chip_family = CF_P16F_A;
+		}
 	else if (strcmp("18f25k50",cpu)==0) 
 		{
 		flash_size = 32768;				//bytes, where 1word = 2bytes = 16 bits
