@@ -93,6 +93,7 @@ You may omit the actual programming using -p switch or verification using -n swi
     Releasing MCLR
 
 you can add some debug output info using -v parameter, ranging from -v 1 to -v 4. It may be suitable for debugging, -v 4 prints out all byte transaction on serial port, so be prepared for huge output.
+There is database file pp3_devices.dat which hold information of supported PIC types. For now, the filename is fixed in code can't be changed and file has to be in the same directory as pp executable..
 
 
 ## Supported devices
@@ -108,12 +109,13 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC12F1612   | YES    | 
 | PIC12F1822   | YES    | 
 | PIC12F1840   | YES    | 
-| PIC12LF1501  |        | 
+| PIC12LF1501  | YES    | 
 | PIC12LF1571  |        | 
+| PIC12LF1552  | YES    | 
 | PIC12LF1572  |        | 
 | PIC12LF1612  |        | 
 | PIC12LF1822  |        | 
-| PIC12LF1840  |        | 
+| PIC12LF1840  | YES    | 
 | PIC16F1454   |        | 
 | PIC16F1455   | YES    | 
 | PIC16F1459   |        | 
@@ -133,7 +135,7 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16F1575   | YES    | 
 | PIC16F1578   |        | 
 | PIC16F1579   |        | 
-| PIC16F1613   |        | 
+| PIC16F1613   | YES    | 
 | PIC16F1614   |        | 
 | PIC16F1615   | YES    | 
 | PIC16F1618   |        | 
@@ -158,7 +160,7 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16F1784   |        | 
 | PIC16F1786   |        | 
 | PIC16F1787   |        | 
-| PIC16F1788   |        | 
+| PIC16F1788   | YES    | 
 | PIC16F1789   |        | 
 | PIC16F1824   |        | 
 | PIC16F1825   |        | 
@@ -167,7 +169,7 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16F1828   |        | 
 | PIC16F1829   | YES    | 
 | PIC16F1847   |        | 
-| PIC16F1933   |        | 
+| PIC16F1933   | YES    | 
 | PIC16F1934   |        | 
 | PIC16F1936   |        | 
 | PIC16F1937   |        | 
@@ -176,7 +178,7 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16F1946   |        | 
 | PIC16F1947   |        | 
 | PIC16LF1454  |        | 
-| PIC16LF1455  |        | 
+| PIC16LF1455  | YES    | 
 | PIC16LF1459  |        | 
 | PIC16LF1503  | YES    | 
 | PIC16LF1507  |        | 
@@ -200,12 +202,12 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16LF1618  |        | 
 | PIC16LF1619  |        | 
 | PIC16LF1703  |        | 
-| PIC16LF1704  |        | 
+| PIC16LF1704  | YES    | 
 | PIC16LF1705  |        | 
 | PIC16LF1707  |        | 
 | PIC16LF1708  |        | 
 | PIC16LF1709  |        | 
-| PIC16LF1713  |        | 
+| PIC16LF1713  | YES    | 
 | PIC16LF1716  |        | 
 | PIC16LF1717  |        | 
 | PIC16LF1718  |        | 
@@ -274,6 +276,73 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18F46K22  |        | 
 | PIC18F47J13  |        | 
 | PIC18F47J53  |        | 
+| PIC18F63J11  |        | 
+| PIC18F63J90  |        | 
+| PIC18F64J11  |        | 
+| PIC18F64J90  |        | 
+| PIC18F65J10  |        | 
+| PIC18F65J11  |        | 
+| PIC18F65J15  |        | 
+| PIC18F65J50  |        | 
+| PIC18F65J90  |        | 
+| PIC18F65J94  |        | 
+| PIC18F66J10  |        | 
+| PIC18F66J11  |        | 
+| PIC18F66J15  |        | 
+| PIC18F66J16  |        | 
+| PIC18F66J50  |        | 
+| PIC18F66J55  |        | 
+| PIC18F66J60  |        | 
+| PIC18F66J65  |        | 
+| PIC18F66J90  |        | 
+| PIC18F66J93  |        | 
+| PIC18F66J94  |        | 
+| PIC18F66J99  |        | 
+| PIC18F67J10  |        | 
+| PIC18F67J11  |        | 
+| PIC18F67J50  |        | 
+| PIC18F67J60  |        | 
+| PIC18F67J90  |        | 
+| PIC18F67J93  |        | 
+| PIC18F67J94  |        | 
+| PIC18F83J11  |        | 
+| PIC18F83J90  |        | 
+| PIC18F84J11  |        | 
+| PIC18F84J90  |        | 
+| PIC18F85J10  |        | 
+| PIC18F85J11  |        | 
+| PIC18F85J15  |        | 
+| PIC18F85J50  |        | 
+| PIC18F85J90  |        | 
+| PIC18F85J94  |        | 
+| PIC18F86J10  |        | 
+| PIC18F86J11  |        | 
+| PIC18F86J15  |        | 
+| PIC18F86J16  |        | 
+| PIC18F86J50  |        | 
+| PIC18F86J55  |        | 
+| PIC18F86J60  |        | 
+| PIC18F86J65  |        | 
+| PIC18F86J72  |        | 
+| PIC18F86J90  |        | 
+| PIC18F86J93  |        | 
+| PIC18F86J94  |        | 
+| PIC18F86J99  |        | 
+| PIC18F87J10  |        | 
+| PIC18F87J11  |        | 
+| PIC18F87J50  |        | 
+| PIC18F87J60  |        | 
+| PIC18F87J72  |        | 
+| PIC18F87J90  |        | 
+| PIC18F87J93  |        | 
+| PIC18F87J94  |        | 
+| PIC18F95J94  |        | 
+| PIC18F96J60  |        | 
+| PIC18F96J65  |        | 
+| PIC18F96J94  |        | 
+| PIC18F96J99  |        | 
+| PIC18F97J60  |        | 
+| PIC18F97J94  |        | 
 | PIC18LF23K22 |        | 
 | PIC18LF24J10 |        | 
 | PIC18LF24J11 |        | 
@@ -307,10 +376,6 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18LF46K22 |        | 
 | PIC18LF47J13 |        | 
 | PIC18LF47J53 |        | 
-
-
-
-
 
 
 The whole project is licensed under MIT license, see LICENSE.md file.
