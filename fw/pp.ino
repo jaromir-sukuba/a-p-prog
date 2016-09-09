@@ -325,7 +325,7 @@ isp_send(0x08,6);
 if (slow==1)
   _delay_ms(5);
 else
-  _delay_ms(2);
+  _delay_ms(3);
 isp_send(0x06,6);
 }
 
@@ -431,10 +431,10 @@ for (i=0;i<n;i++)
     }
   _delay_us(ISP_CLK_DELAY);
   ISP_CLK_1
-  _delay_us(ISP_CLK_DELAY);
-   ISP_CLK_0
-  _delay_us(ISP_CLK_DELAY);
+//  _delay_us(ISP_CLK_DELAY);
   data = data >> 1;
+  ISP_CLK_0
+//  _delay_us(ISP_CLK_DELAY);
   }
 }
 
@@ -503,7 +503,7 @@ p18_set_tblptr(addr);
 for (i=0;i<n-1;i++)  
   p18_send_cmd_payload(0x0D,data[i]);  
 p18_send_cmd_payload(0x0F,data[n-1]);  
-p_18_modfied_nop(0);
+p_18_modfied_nop(1);
 }
 
 void p18_isp_write_cfg (unsigned char data1, unsigned char data2, unsigned long addr)
