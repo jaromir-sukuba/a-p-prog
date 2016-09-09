@@ -49,3 +49,10 @@
 - some more intelligence in PIC16 programming, results in faster programming
 - PIC16F17xx devices added, 205 devices supported now
 
+2016-09-07
+- version 0.92
+- major rewrite of MCU selection routines: instead of hardcoded if-then behemoth, 
+there is external database parser, all MCU parameter are here in plain text
+- source code shrinked from 2700 lines to 900
+- source code slightly cleaned up and formatted
+- added 67 new devices from PIC18FxxJxx family and one PIC16, resulting in 273 total
