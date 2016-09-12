@@ -244,7 +244,7 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16LF1946  |        | 
 | PIC16LF1947  |        | 
 | PIC18F23K22  |        | 
-| PIC18F24J10  |        | 
+| PIC18F24J10  | YES    | 
 | PIC18F24J11  |        | 
 | PIC18F24J50  | YES    | 
 | PIC18F24K22  | YES    | 

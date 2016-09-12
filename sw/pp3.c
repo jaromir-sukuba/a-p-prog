@@ -21,7 +21,7 @@ void comErr(char *fmt, ...);
 void flsprintf(FILE* f, char *fmt, ...);
 
 char * COM = "";
-char * PP_VERSION = "0.92";
+char * PP_VERSION = "0.93";
 
 #define	PROGMEM_LEN	260000
 #define	CONFIG_LEN	32
@@ -161,9 +161,9 @@ void initSerialPort()
         }
 
     timeout_sets.ReadIntervalTimeout         = 1;
-    timeout_sets.ReadTotalTimeoutMultiplier  = 100;
+    timeout_sets.ReadTotalTimeoutMultiplier  = 1000;
     timeout_sets.ReadTotalTimeoutConstant    = 1;
-    timeout_sets.WriteTotalTimeoutMultiplier = 100;
+    timeout_sets.WriteTotalTimeoutMultiplier = 1000;
     timeout_sets.WriteTotalTimeoutConstant   = 1;
 
     if(!SetCommTimeouts(port_handle, &timeout_sets))
@@ -796,12 +796,15 @@ int main(int argc, char *argv[])
                     }
 
                 }
+				
             if (verbose>0) printf ("%d pages programmed\n",pages_performed);
             if (verbose>0) printf ("Programming config\n");
             for (i=0; i<16; i=i+2)
                 if (chip_family==CF_P18F_A) p18a_write_cfg(config_bytes[i],config_bytes[i+1],0x300000+i);
+            /*
             for (i=0; i<config_size; i=i+2)
                 if (chip_family==CF_P18F_B) p18a_write_cfg(config_bytes[i],config_bytes[i+1],0x300000+i);
+			*/
 
             }
         if (verify==1)

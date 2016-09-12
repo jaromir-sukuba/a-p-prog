@@ -56,3 +56,8 @@ there is external database parser, all MCU parameter are here in plain text
 - source code shrinked from 2700 lines to 900
 - source code slightly cleaned up and formatted
 - added 67 new devices from PIC18FxxJxx family and one PIC16, resulting in 273 total
+
+2016-09-12
+- version 0.93
+- fixed bugs for some older 18FxxJxx devices
+- more devices tested

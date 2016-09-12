@@ -516,13 +516,13 @@ p18_send_cmd_payload(0,0x84A6);
 p18_set_tblptr(addr);
 p18_send_cmd_payload(0x0F,data1);  
 p_18_modfied_nop(1);
-_delay_ms(1);
+_delay_ms(5);
 p18_set_tblptr(addr+1);
 i = data2;
 i = i << 8;
 p18_send_cmd_payload(0x0F,i);  
 p_18_modfied_nop(1);
-_delay_ms(1);
+_delay_ms(5);
 }
 
 
