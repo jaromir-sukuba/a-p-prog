@@ -61,3 +61,9 @@ there is external database parser, all MCU parameter are here in plain text
 - version 0.93
 - fixed bugs for some older 18FxxJxx devices
 - more devices tested
+
+2016-09-14
+- version 0.94
+- added support for 12 new devices from PIC18FxxK80 family, 285 in total
+- PIC18F25K80 tested
+- some bugfixes

@@ -1,5 +1,5 @@
 /*
- * pp programmer, for SW 0.91 and higher
+ * pp programmer, for SW 0.94 and higher
  * 
  * 
  */
@@ -50,6 +50,8 @@ void p18_set_tblptr (unsigned long val);
 unsigned char p18_read_pgm_byte (void);
 void p_18_modfied_nop (void);
 void p18_isp_mass_erase (void);
+void p18fk_isp_mass_erase (unsigned char data1, unsigned char data2, unsigned char data3);
+
 
 void usart_tx_b(uint8_t data);
 uint8_t usart_rx_rdy(void);
@@ -263,6 +265,30 @@ int main (void)
           usart_tx_b (0xA3);
           rx_state = 0;
           }
+        if (rx_message[0]==0x30)
+          {
+          p18fk_isp_mass_erase (rx_message[2], rx_message[3], rx_message[4]);
+          usart_tx_b (0xB0);
+          rx_state = 0;
+          }
+        if (rx_message[0]==0x31)
+          {
+          addr = (((unsigned long)(rx_message[3]))<<16) + (((unsigned long)(rx_message[4]))<<8) + (((unsigned long)(rx_message[5]))<<0);
+          for (i=0;i<rx_message[2]/2;i++)
+            {
+            flash_buffer[i] = (((unsigned int)(rx_message[(2*i)+1+6]))<<8) + (((unsigned int)(rx_message[(2*i)+0+6]))<<0);
+            }
+          p18fk_isp_write_pgm (flash_buffer, addr, rx_message[2]/2);
+          usart_tx_b (0xB1);
+          rx_state = 0;
+          }
+        if (rx_message[0]==0x32)
+          {
+          addr = (((unsigned long)(rx_message[3]))<<16) + (((unsigned long)(rx_message[4]))<<8) + (((unsigned long)(rx_message[5]))<<0);
+          p18fk_isp_write_cfg (rx_message[6],rx_message[7], addr);
+          usart_tx_b (0xB2);
+          rx_state = 0;
+          }            
         }
       }      
     }
@@ -434,6 +460,7 @@ for (i=0;i<n;i++)
 //  _delay_us(ISP_CLK_DELAY);
   data = data >> 1;
   ISP_CLK_0
+  ISP_DAT_0
 //  _delay_us(ISP_CLK_DELAY);
   }
 }
@@ -491,6 +518,40 @@ isp_send(0x00,16);
 }
 
 
+void p18fk_isp_mass_erase (unsigned char data1, unsigned char data2, unsigned char data3)
+{
+unsigned int tmp1, tmp2, tmp3;
+tmp1 = data1;
+tmp1 = (tmp1<<8)|data1;
+tmp2 = data2;
+tmp2 = (tmp2<<8)|data2;
+tmp3 = data3;
+tmp3 = (tmp3<<8)|data3;
+p18_set_tblptr(0x3C0004);
+p18_send_cmd_payload(0x0C,tmp3);
+p18_set_tblptr(0x3C0005);
+p18_send_cmd_payload(0x0C,tmp2);
+p18_set_tblptr(0x3C0006);
+p18_send_cmd_payload(0x0C,tmp1);
+p18_send_cmd_payload(0x00,0);
+isp_send(0x00,4);
+_delay_ms(5);
+isp_send(0x00,16);
+}
+
+void p18fk_isp_write_pgm (unsigned int * data, unsigned long addr, unsigned char n)
+{
+unsigned char i;
+//_delay_us(3*ISP_CLK_DELAY);
+p18_send_cmd_payload(0,0x8E7F);
+p18_send_cmd_payload(0,0x9C7F);
+p18_send_cmd_payload(0,0x847F);
+p18_set_tblptr(addr);
+for (i=0;i<n-1;i++)  
+  p18_send_cmd_payload(0x0D,data[i]);  
+p18_send_cmd_payload(0x0F,data[n-1]);  
+p_18_modfied_nop(0);
+}
 
 void p18_isp_write_pgm (unsigned int * data, unsigned long addr, unsigned char n)
 {
@@ -525,6 +586,23 @@ p_18_modfied_nop(1);
 _delay_ms(5);
 }
 
+void p18fk_isp_write_cfg (unsigned char data1, unsigned char data2, unsigned long addr)
+{
+unsigned int i;
+//_delay_us(3*ISP_CLK_DELAY);
+p18_send_cmd_payload(0,0x8E7F);
+p18_send_cmd_payload(0,0x8C7F);
+p18_set_tblptr(addr);
+p18_send_cmd_payload(0x0F,data1);  
+p_18_modfied_nop(1);
+_delay_ms(5);
+p18_set_tblptr(addr+1);
+i = data2;
+i = i << 8;
+p18_send_cmd_payload(0x0F,i);  
+p_18_modfied_nop(1);
+_delay_ms(5);
+}
 
 void p_18_modfied_nop (unsigned char nop_long)
 {
