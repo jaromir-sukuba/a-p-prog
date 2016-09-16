@@ -67,3 +67,9 @@ there is external database parser, all MCU parameter are here in plain text
 - added support for 12 new devices from PIC18FxxK80 family, 285 in total
 - PIC18F25K80 tested
 - some bugfixes
+
+2016-09-16
+- version 0.95
+- added support for some PIC18FxxK22 and PIC18FxxK50 devcies, 305 in total
+- there is not much LVP ICSP-able 8-bit PIC devcies left
+- some more devices tested, 47 in total

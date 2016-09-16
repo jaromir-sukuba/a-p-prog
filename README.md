@@ -182,7 +182,7 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16LF1459  |        | 
 | PIC16LF1503  | YES    | 
 | PIC16LF1507  |        | 
-| PIC16LF1508  |        | 
+| PIC16LF1508  | YES    | 
 | PIC16LF1509  |        | 
 | PIC16LF1512  |        | 
 | PIC16LF1513  |        | 
@@ -248,6 +248,7 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18F24J11  |        | 
 | PIC18F24J50  | YES    | 
 | PIC18F24K22  | YES    | 
+| PIC18F24K50  |        | 
 | PIC18F25J10  |        | 
 | PIC18F25J11  |        | 
 | PIC18F25J50  |        | 
@@ -259,6 +260,7 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18F26J50  | YES    | 
 | PIC18F26J53  |        | 
 | PIC18F26K22  | YES    | 
+| PIC18F26K50  |        | 
 | PIC18F26k80  |        | 
 | PIC18F27J13  |        | 
 | PIC18F27J53  | YES    | 
@@ -267,16 +269,18 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18F44J11  |        | 
 | PIC18F44J50  |        | 
 | PIC18F44K22  |        | 
-| PIC18F45J10  |        | 
+| PIC18F45J10  | YES    | 
 | PIC18F45J11  |        | 
 | PIC18F45J50  |        | 
 | PIC18F45K22  |        | 
+| PIC18F45K50  |        | 
 | PIC18F45k80  |        | 
 | PIC18F46J11  |        | 
 | PIC18F46J13  |        | 
 | PIC18F46J50  |        | 
 | PIC18F46J53  |        | 
 | PIC18F46K22  |        | 
+| PIC18F46k50  |        | 
 | PIC18F46k80  |        | 
 | PIC18F47J13  |        | 
 | PIC18F47J53  |        | 
@@ -290,7 +294,9 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18F65J50  |        | 
 | PIC18F65J90  |        | 
 | PIC18F65J94  |        | 
+| PIC18F65K22  |        | 
 | PIC18F65k80  |        | 
+| PIC18F65K90  |        | 
 | PIC18F66J10  |        | 
 | PIC18F66J11  |        | 
 | PIC18F66J15  | YES    | 
@@ -303,14 +309,18 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18F66J93  |        | 
 | PIC18F66J94  |        | 
 | PIC18F66J99  |        | 
+| PIC18F66K22  |        | 
 | PIC18F66k80  |        | 
+| PIC18F66K90  |        | 
 | PIC18F67J10  |        | 
 | PIC18F67J11  |        | 
-| PIC18F67J50  |        | 
+| PIC18F67J50  | YES    | 
 | PIC18F67J60  |        | 
 | PIC18F67J90  |        | 
 | PIC18F67J93  |        | 
 | PIC18F67J94  |        | 
+| PIC18F67K22  | YES    | 
+| PIC18F67K90  |        | 
 | PIC18F83J11  |        | 
 | PIC18F83J90  |        | 
 | PIC18F84J11  |        | 
@@ -321,6 +331,8 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18F85J50  |        | 
 | PIC18F85J90  |        | 
 | PIC18F85J94  |        | 
+| PIC18F85K22  |        | 
+| PIC18F85K90  |        | 
 | PIC18F86J10  |        | 
 | PIC18F86J11  |        | 
 | PIC18F86J15  |        | 
@@ -334,6 +346,8 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18F86J93  |        | 
 | PIC18F86J94  |        | 
 | PIC18F86J99  |        | 
+| PIC18F86K22  |        | 
+| PIC18F86K90  |        | 
 | PIC18F87J10  |        | 
 | PIC18F87J11  |        | 
 | PIC18F87J50  |        | 
@@ -342,6 +356,8 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18F87J90  |        | 
 | PIC18F87J93  |        | 
 | PIC18F87J94  |        | 
+| PIC18F87K22  |        | 
+| PIC18F87K90  |        | 
 | PIC18F95J94  |        | 
 | PIC18F96J60  |        | 
 | PIC18F96J65  |        | 
@@ -354,10 +370,11 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18LF24J11 |        | 
 | PIC18LF24J50 |        | 
 | PIC18LF24K22 |        | 
+| PIC18LF24K50 | YES    | 
 | PIC18LF25J10 |        | 
 | PIC18LF25J11 |        | 
 | PIC18LF25J50 |        | 
-| PIC18LF25K22 |        | 
+| PIC18LF25K22 | YES    | 
 | PIC18LF25K50 | YES    | 
 | PIC18LF25k80 |        | 
 | PIC18LF26J11 |        | 
@@ -365,6 +382,7 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18LF26J50 |        | 
 | PIC18LF26J53 |        | 
 | PIC18LF26K22 |        | 
+| PIC18LF26K50 |        | 
 | PIC18LF26k80 |        | 
 | PIC18LF27J13 |        | 
 | PIC18LF27J53 |        | 
@@ -377,17 +395,20 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18LF45J11 |        | 
 | PIC18LF45J50 |        | 
 | PIC18LF45K22 |        | 
+| PIC18LF45K50 |        | 
 | PIC18LF45k80 |        | 
 | PIC18LF46J11 |        | 
 | PIC18LF46J13 |        | 
 | PIC18LF46J50 |        | 
 | PIC18LF46J53 |        | 
 | PIC18LF46K22 |        | 
+| PIC18LF46k50 |        | 
 | PIC18LF46k80 |        | 
 | PIC18LF47J13 |        | 
 | PIC18LF47J53 |        | 
 | PIC18LF65k80 |        | 
 | PIC18LF66k80 |        | 
+
 
 
 
