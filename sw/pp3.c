@@ -21,7 +21,7 @@ void comErr(char *fmt, ...);
 void flsprintf(FILE* f, char *fmt, ...);
 
 char * COM = "";
-char * PP_VERSION = "0.95";
+char * PP_VERSION = "0.96";
 
 #define	PROGMEM_LEN	260000
 #define	CONFIG_LEN	32
@@ -32,6 +32,8 @@ char * PP_VERSION = "0.95";
 #define	CF_P18F_C	4
 #define	CF_P18F_D	5
 #define	CF_P18F_E	6
+#define	CF_P16F_C	7
+
 
 int verbose = 1,verify = 1,program = 1,sleep_time = 0;
 int devid_expected,devid_mask,baudRate,com,flash_size,page_size,chip_family,config_size;
@@ -399,6 +401,7 @@ int setCPUtype(char* cpu)
 				if (verbose>1) printf("Found database match %s,%d,%d,%x,%x,%s\n",read_cpu_type,read_flash_size,read_page_size,read_id,read_mask,read_algo_type);
 				if (strcmp("CF_P16F_A",read_algo_type)==0) chip_family = CF_P16F_A;
 				if (strcmp("CF_P16F_B",read_algo_type)==0) chip_family = CF_P16F_B;
+				if (strcmp("CF_P16F_C",read_algo_type)==0) chip_family = CF_P16F_C;
 				if (strcmp("CF_P18F_A",read_algo_type)==0) chip_family = CF_P18F_A;
 				if (strcmp("CF_P18F_B",read_algo_type)==0) chip_family = CF_P18F_B;
 				if (strcmp("CF_P18F_C",read_algo_type)==0) chip_family = CF_P18F_C;
@@ -701,6 +704,95 @@ int p18d_write_cfg (unsigned char data1, unsigned char data2, int address)
     return 0;
     }
 
+
+int p16c_mass_erase (void)
+    {
+    if (verbose>2) flsprintf(stdout,"Mass erase\n");
+    putByte(0x43);
+    putByte(0x00);
+    getByte();
+    return 0;
+    }
+
+int p16c_read_page (unsigned char * data, int address, unsigned char num)
+    {
+    unsigned char i;
+    address = address / 2;
+    if (verbose>2) flsprintf(stdout,"Reading page of %d bytes at 0x%6.6x\n", num, address);
+    putByte(0x41);
+    putByte(0x04);
+    putByte(num/2);
+    putByte((address>>16)&0xFF);
+    putByte((address>>8)&0xFF);
+    putByte((address>>0)&0xFF);
+    getByte();
+    for (i=0; i<num; i++)
+        {
+        *data++ = getByte();
+        }
+//    for (i=0; i<num; i++) if (verbose>2) flsprintf(stdout,"%2.2x ", data[i]);
+       
+    return 0;
+    }
+
+int p16c_write_page (unsigned char * data, int address, unsigned char num)
+    {
+    unsigned char i;
+    address = address / 2;
+ //   empty = 0;
+    if (verbose>2) flsprintf(stdout,"Writing A page of %d bytes at 0x%6.6x\n", num, address);
+    putByte(0x42);
+    putByte(4+num);
+    putByte(num);
+    putByte((address>>16)&0xFF);
+    putByte((address>>8)&0xFF);
+    putByte((address>>0)&0xFF);
+    for (i=0; i<num; i++)
+        putByte(data[i]);
+    getByte();
+    return 0;
+    }
+
+int p16c_get_devid (void)
+    {
+    unsigned char tdat[20],devid_lo,devid_hi;
+    unsigned int retval;
+    p16c_read_page(tdat, 0x8006*2,4);
+    devid_hi = tdat[(2*0)+1];
+    devid_lo = tdat[(2*0)+0];
+    if (verbose>2) flsprintf(stdout,"Getting devid - lo:%2.2x,hi:%2.2x\n",devid_lo,devid_hi);
+    retval = (((unsigned int)(devid_lo))<<0) + (((unsigned int)(devid_hi))<<8);
+    retval = retval & devid_mask;
+    return retval;
+    }
+
+
+int p16c_write_single_cfg (unsigned char data1, unsigned char data2, int address)
+    {
+    if (verbose>2) flsprintf(stdout,"Writing cfg 0x%2.2x 0x%2.2x at 0x%6.6x\n", data1, data2, address);
+    putByte(0x44);
+    putByte(6);
+    putByte(0);
+    putByte((address>>16)&0xFF);
+    putByte((address>>8)&0xFF);
+    putByte((address>>0)&0xFF);
+    putByte(data1);
+    putByte(data2);
+    getByte();
+    return 0;
+    }
+
+int p16c_write_cfg (void)
+    {
+	p16c_write_single_cfg(config_bytes[1],config_bytes[0],0x8007);
+	p16c_write_single_cfg(config_bytes[3],config_bytes[2],0x8008);
+	p16c_write_single_cfg(config_bytes[5],config_bytes[4],0x8009);
+	p16c_write_single_cfg(config_bytes[7],config_bytes[6],0x800A);
+	p16c_write_single_cfg(config_bytes[9],config_bytes[8],0x800B);
+	return 0;
+    }
+
+
 int prog_enter_progmode (void)
     {
     if (verbose>2) flsprintf(stdout,"Entering programming mode\n");
@@ -710,6 +802,7 @@ int prog_enter_progmode (void)
     else 	if (chip_family==CF_P18F_B) putByte(0x10);
     else 	if (chip_family==CF_P18F_D) putByte(0x10);
     else 	if (chip_family==CF_P18F_E) putByte(0x10);
+    else 	if (chip_family==CF_P16F_C) putByte(0x40);
     putByte(0x00);
     getByte();
     return 0;
@@ -731,6 +824,8 @@ int prog_get_device_id (void)
 	if (verbose>2) flsprintf(stdout,"getting ID for family %d\n",chip_family);
     if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B) )
         return p16a_get_devid();
+    if ((chip_family==CF_P16F_C))
+        return p16c_get_devid();
     else 	if ((chip_family==CF_P18F_A)|(chip_family==CF_P18F_B)|(chip_family==CF_P18F_D)|(chip_family==CF_P18F_E))
         {
         p18a_read_page((unsigned char *)&mem_str, 0x3FFFFE, 2);
@@ -765,7 +860,8 @@ int parse_hex (char * filename, unsigned char * progmem, unsigned char * config)
     line_address_offset = 0;
     if (chip_family==CF_P16F_A) p16_cfg = 1;
     if (chip_family==CF_P16F_B) p16_cfg = 1;
-
+    if (chip_family==CF_P16F_C) p16_cfg = 1;
+    
     if (verbose>2) printf ("File open\n");
     while ((read =  getlinex(&line, &len, sf)) != -1)
         {
@@ -849,7 +945,7 @@ int main(int argc, char *argv[])
     //for PIC18, it is divided into two regions, program memory and config. to glue those two
     //different approaches, I made this. not particulary proud of having this mess
     for (i=0; i<70000; i++) file_image [i] = progmem[i];
-    for (i=0; i<4; i++) file_image [2*0x8007 + i] = config_bytes[i];
+    for (i=0; i<10; i++) file_image [2*0x8007 + i] = config_bytes[i];
     for (i=0; i<70000; i++)
         {
         if ((i%2)!=0)
@@ -961,8 +1057,9 @@ int main(int argc, char *argv[])
         {
         if (program==1)
             {
-            p16a_mass_erase();
-            p16a_rst_pointer();				//pointer reset is needed before every "big" operation
+            if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)) p16a_mass_erase();
+            if ((chip_family==CF_P16F_C)) p16c_mass_erase();
+            if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)) p16a_rst_pointer();				//pointer reset is needed before every "big" operation
             if (verbose>0) printf ("Programming FLASH (%d B in %d pages)",flash_size,flash_size/page_size);
             fflush(stdout);
             for (i=0; i<flash_size; i=i+page_size)
@@ -972,17 +1069,19 @@ int main(int argc, char *argv[])
                     printf (".");
                     fflush(stdout);
                     }
-                p16a_program_page(i,page_size,0);
+                if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)) p16a_program_page(i,page_size,0);
+                if ((chip_family==CF_P16F_C)) p16c_write_page(progmem+i,i,page_size);
                 }
             if (verbose>0) printf ("\n");
             if (verbose>0) printf ("Programming config\n");
-            p16a_program_config();
+            if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)) p16a_program_config();
+            if (chip_family==CF_P16F_C) p16c_write_cfg();
             }
         if (verify==1)
             {
             if (verbose>0) printf ("Verifying FLASH (%d B in %d pages)",flash_size,flash_size/page_size);
             fflush(stdout);
-            p16a_rst_pointer();
+            if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)) p16a_rst_pointer();
             for (i=0; i<flash_size; i=i+page_size)
                 {
                 if (verbose>1)
@@ -990,7 +1089,8 @@ int main(int argc, char *argv[])
                     printf (".");
                     fflush(stdout);
                     }
-                p16a_read_page(tdat,page_size);
+                if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)) p16a_read_page(tdat,page_size);
+                if ((chip_family==CF_P16F_C)) p16c_read_page(tdat,i,page_size);
                 for (j=0; j<page_size; j++)
                     {
                     if (file_image[i+j] != tdat[j])
@@ -1003,21 +1103,37 @@ int main(int argc, char *argv[])
                 }
             if (verbose>0) printf ("\n");
             if (verbose>0) printf ("Verifying config\n");
-            config = p16a_get_config(7);
-            econfig = (((unsigned int)(file_image[2*0x8007]))<<0) + (((unsigned int)(file_image[2*0x8007+1]))<<8);
+			if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B))
+				{
+				config = p16a_get_config(7);
+				econfig = (((unsigned int)(file_image[2*0x8007]))<<0) + (((unsigned int)(file_image[2*0x8007+1]))<<8);
+				if (config==econfig)
+					{
+					if (verbose>1) printf ("config 1 OK: %4.4X\n",config);
+					}
+				else	printf ("config 1 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
+				config = p16a_get_config(8);
+				econfig = (((unsigned int)(file_image[2*0x8008]))<<0) + (((unsigned int)(file_image[2*0x8008+1]))<<8);
+				if (config==econfig)
+					{
+					if (verbose>1) printf ("config 2 OK: %4.4X\n",config);
+					}
+				else	printf ("config 2 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
+				}
+			if (chip_family==CF_P16F_C)
+				{
+				p16c_read_page(tdat,0x8007*2,page_size);
+                for (j=0; j<10; j++)
+                    {
+                    if (config_bytes[j] != tdat[j])
+                        {
+                        printf ("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n",i+j,config_bytes[j],tdat[j]);
+                        prog_exit_progmode();
+                        exit(0);
+                        }
+                    }
 
-            if (config==econfig)
-                {
-                if (verbose>1) printf ("config 1 OK: %4.4X\n",config);
-                }
-            else	printf ("config 1 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
-            config = p16a_get_config(8);
-            econfig = (((unsigned int)(file_image[2*0x8008]))<<0) + (((unsigned int)(file_image[2*0x8008+1]))<<8);
-            if (config==econfig)
-                {
-                if (verbose>1) printf ("config 2 OK: %4.4X\n",config);
-                }
-            else	printf ("config 2 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
+				}
             }
         }
     prog_exit_progmode();

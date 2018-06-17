@@ -73,3 +73,12 @@ there is external database parser, all MCU parameter are here in plain text
 - added support for some PIC18FxxK22 and PIC18FxxK50 devcies, 305 in total
 - there is not much LVP ICSP-able 8-bit PIC devcies left
 - some more devices tested, 47 in total
+
+2018-06-18
+- after a long hiatus, version 0.96
+- implemented newly introduced programming algorithm for PIC16F1xxxx devices
+- hopefully nothing old broken
+- 14 new devices, resulting in 319 total
+- some new devcies still missing
+
+
