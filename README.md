@@ -202,7 +202,7 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16F18855  | YES    | 
 | PIC16F18856  |        |
 | PIC16F18857  |        |  
-| PIC16F18875  |        |
+| PIC16F18875  | YES    |
 | PIC16F18876  |        |  
 | PIC16F18877  |        |
 | PIC16F19155  |        | 
