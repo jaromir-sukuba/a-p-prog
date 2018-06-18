@@ -81,4 +81,8 @@ there is external database parser, all MCU parameter are here in plain text
 - 14 new devices, resulting in 319 total
 - some new devcies still missing
 
+2018-16-19
+- some PIC16F devices are somehow faster to program
+- new devices added PIC16F183xx, PIC16F185xx, PIC16F19xxx), 379 in total
+
 

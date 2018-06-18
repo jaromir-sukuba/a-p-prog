@@ -21,7 +21,7 @@ void comErr(char *fmt, ...);
 void flsprintf(FILE* f, char *fmt, ...);
 
 char * COM = "";
-char * PP_VERSION = "0.96";
+char * PP_VERSION = "0.97";
 
 #define	PROGMEM_LEN	260000
 #define	CONFIG_LEN	32
@@ -33,6 +33,8 @@ char * PP_VERSION = "0.96";
 #define	CF_P18F_D	5
 #define	CF_P18F_E	6
 #define	CF_P16F_C	7
+#define	CF_P16F_D	8
+
 
 
 int verbose = 1,verify = 1,program = 1,sleep_time = 0;
@@ -402,6 +404,7 @@ int setCPUtype(char* cpu)
 				if (strcmp("CF_P16F_A",read_algo_type)==0) chip_family = CF_P16F_A;
 				if (strcmp("CF_P16F_B",read_algo_type)==0) chip_family = CF_P16F_B;
 				if (strcmp("CF_P16F_C",read_algo_type)==0) chip_family = CF_P16F_C;
+				if (strcmp("CF_P16F_D",read_algo_type)==0) chip_family = CF_P16F_D;
 				if (strcmp("CF_P18F_A",read_algo_type)==0) chip_family = CF_P18F_A;
 				if (strcmp("CF_P18F_B",read_algo_type)==0) chip_family = CF_P18F_B;
 				if (strcmp("CF_P18F_C",read_algo_type)==0) chip_family = CF_P18F_C;
@@ -427,7 +430,10 @@ int setCPUtype(char* cpu)
 int p16a_rst_pointer (void)
     {
     if (verbose>2) flsprintf(stdout,"Resetting PC\n");
-    putByte(0x03);					//operation number
+    if (chip_family==CF_P16F_D)
+		putByte(0x09);					//operation number
+	else
+		putByte(0x03);					//operation number	
     putByte(0x00);					//number of bytes remaining
     getByte();						//return result - no check for its value
     return 0;
@@ -529,7 +535,8 @@ int p16a_program_config(void)
     p16a_inc_pointer(7);
     p16a_program_page(2*0x8007,2,1);
     p16a_program_page(2*0x8008,2,1);
-    if (chip_family==CF_P16F_B) p16a_program_page(2*0x8009,2,1);
+    if ((chip_family==CF_P16F_B)|(chip_family==CF_P16F_D)) p16a_program_page(2*0x8009,2,1);
+    if (chip_family==CF_P16F_D) p16a_program_page(2*0x800A,2,1);
     return 0;
     }
 
@@ -737,10 +744,21 @@ int p16c_read_page (unsigned char * data, int address, unsigned char num)
 
 int p16c_write_page (unsigned char * data, int address, unsigned char num)
     {
-    unsigned char i;
+    unsigned char i, empty;
     address = address / 2;
- //   empty = 0;
+    empty = 1;
+    for (i=0; i<num; i=i+2)
+		{
+		if 	((data[i]!=0xFF)|(data[i+1]!=0xFF))
+			empty = 0;
+		}
     if (verbose>2) flsprintf(stdout,"Writing A page of %d bytes at 0x%6.6x\n", num, address);
+    if (empty==1)
+        {
+        if (verbose>3)
+            flsprintf(stdout,"~");
+        return 0;
+        }
     putByte(0x42);
     putByte(4+num);
     putByte(num);
@@ -798,6 +816,7 @@ int prog_enter_progmode (void)
     if (verbose>2) flsprintf(stdout,"Entering programming mode\n");
     if (chip_family==CF_P16F_A) putByte(0x01);
     else 	if (chip_family==CF_P16F_B) putByte(0x01);
+    else 	if (chip_family==CF_P16F_D) putByte(0x01);
     else 	if (chip_family==CF_P18F_A) putByte(0x10);
     else 	if (chip_family==CF_P18F_B) putByte(0x10);
     else 	if (chip_family==CF_P18F_D) putByte(0x10);
@@ -822,7 +841,7 @@ int prog_get_device_id (void)
     unsigned char mem_str[10];
     unsigned int devid;
 	if (verbose>2) flsprintf(stdout,"getting ID for family %d\n",chip_family);
-    if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B) )
+    if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D))
         return p16a_get_devid();
     if ((chip_family==CF_P16F_C))
         return p16c_get_devid();
@@ -861,6 +880,7 @@ int parse_hex (char * filename, unsigned char * progmem, unsigned char * config)
     if (chip_family==CF_P16F_A) p16_cfg = 1;
     if (chip_family==CF_P16F_B) p16_cfg = 1;
     if (chip_family==CF_P16F_C) p16_cfg = 1;
+    if (chip_family==CF_P16F_D) p16_cfg = 1;
     
     if (verbose>2) printf ("File open\n");
     while ((read =  getlinex(&line, &len, sf)) != -1)
@@ -1057,9 +1077,9 @@ int main(int argc, char *argv[])
         {
         if (program==1)
             {
-            if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)) p16a_mass_erase();
+            if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D)) p16a_mass_erase();
             if ((chip_family==CF_P16F_C)) p16c_mass_erase();
-            if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)) p16a_rst_pointer();				//pointer reset is needed before every "big" operation
+            if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D)) p16a_rst_pointer();				//pointer reset is needed before every "big" operation
             if (verbose>0) printf ("Programming FLASH (%d B in %d pages)",flash_size,flash_size/page_size);
             fflush(stdout);
             for (i=0; i<flash_size; i=i+page_size)
@@ -1069,19 +1089,19 @@ int main(int argc, char *argv[])
                     printf (".");
                     fflush(stdout);
                     }
-                if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)) p16a_program_page(i,page_size,0);
+                if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D)) p16a_program_page(i,page_size,0);
                 if ((chip_family==CF_P16F_C)) p16c_write_page(progmem+i,i,page_size);
                 }
             if (verbose>0) printf ("\n");
             if (verbose>0) printf ("Programming config\n");
-            if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)) p16a_program_config();
+            if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D)) p16a_program_config();
             if (chip_family==CF_P16F_C) p16c_write_cfg();
             }
         if (verify==1)
             {
             if (verbose>0) printf ("Verifying FLASH (%d B in %d pages)",flash_size,flash_size/page_size);
             fflush(stdout);
-            if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)) p16a_rst_pointer();
+            if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D)) p16a_rst_pointer();
             for (i=0; i<flash_size; i=i+page_size)
                 {
                 if (verbose>1)
@@ -1089,7 +1109,7 @@ int main(int argc, char *argv[])
                     printf (".");
                     fflush(stdout);
                     }
-                if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)) p16a_read_page(tdat,page_size);
+                if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D)) p16a_read_page(tdat,page_size);
                 if ((chip_family==CF_P16F_C)) p16c_read_page(tdat,i,page_size);
                 for (j=0; j<page_size; j++)
                     {
@@ -1103,7 +1123,7 @@ int main(int argc, char *argv[])
                 }
             if (verbose>0) printf ("\n");
             if (verbose>0) printf ("Verifying config\n");
-			if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B))
+			if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D))
 				{
 				config = p16a_get_config(7);
 				econfig = (((unsigned int)(file_image[2*0x8007]))<<0) + (((unsigned int)(file_image[2*0x8007+1]))<<8);

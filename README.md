@@ -177,6 +177,27 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16F1939   |        | 
 | PIC16F1946   |        | 
 | PIC16F1947   |        | 
+| PIC16F15313  |        | 
+| PIC16F15323  |        | 
+| PIC16F15324  |        | 
+| PIC16F15325  |        | 
+| PIC16F15344  |        | 
+| PIC16F15345  |        | 
+| PIC16F15354  |        | 
+| PIC16F15355  | YES    | 
+| PIC16F15356  |        | 
+| PIC16F15375  |        | 
+| PIC16F15376  |        | 
+| PIC16F15385  |        | 
+| PIC16F15386  |        | 
+| PIC16F18313  |        |
+| PIC16F18323  |        |
+| PIC16F18324  |        |
+| PIC16F18325  |        |
+| PIC16F18326  |        |
+| PIC16F18344  |        |
+| PIC16F18345  |        |
+| PIC16F18346  |        |
 | PIC16F18854  |        | 
 | PIC16F18855  | YES    | 
 | PIC16F18856  |        |
@@ -184,6 +205,15 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16F18875  |        |
 | PIC16F18876  |        |  
 | PIC16F18877  |        |
+| PIC16F19155  |        | 
+| PIC16F19156  | YES    | 
+| PIC16F19175  |        | 
+| PIC16F19176  | YES    | 
+| PIC16F19185  |        | 
+| PIC16F19186  |        | 
+| PIC16F19195  |        | 
+| PIC16F19196  |        | 
+| PIC16F19197  |        | 
 | PIC16LF1454  |        | 
 | PIC16LF1455  | YES    | 
 | PIC16LF1459  |        | 
@@ -250,6 +280,27 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16LF1939  |        | 
 | PIC16LF1946  |        | 
 | PIC16LF1947  |        | 
+| PIC16LF15313 |        | 
+| PIC16LF15323 |        | 
+| PIC16LF15324 |        | 
+| PIC16LF15325 |        | 
+| PIC16LF15344 |        | 
+| PIC16LF15345 |        | 
+| PIC16LF15354 |        | 
+| PIC16LF15355 |        | 
+| PIC16LF15356 |        | 
+| PIC16LF15375 |        | 
+| PIC16LF15376 |        | 
+| PIC16LF15385 |        | 
+| PIC16LF15386 |        | 
+| PIC16LF18313 |        |
+| PIC16LF18323 |        |
+| PIC16LF18324 |        |
+| PIC16LF18325 |        |
+| PIC16LF18326 |        |
+| PIC16LF18344 |        |
+| PIC16LF18345 |        |
+| PIC16LF18346 |        |
 | PIC16LF18854 |        | 
 | PIC16LF18855 |        | 
 | PIC16LF18856 |        |
@@ -257,6 +308,15 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16LF18875 |        |
 | PIC16LF18876 |        |  
 | PIC16LF18877 |        |
+| PIC16LF19155 |        | 
+| PIC16LF19156 |        | 
+| PIC16LF19175 |        | 
+| PIC16LF19176 |        | 
+| PIC16LF19185 |        | 
+| PIC16LF19186 |        | 
+| PIC16LF19195 |        | 
+| PIC16LF19196 |        | 
+| PIC16LF19197 |        | 
 | PIC18F23K22  |        | 
 | PIC18F24J10  | YES    | 
 | PIC18F24J11  |        | 
@@ -422,9 +482,6 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18LF47J53 |        | 
 | PIC18LF65k80 |        | 
 | PIC18LF66k80 |        | 
-
-
-
 
 The whole project is licensed under MIT license, see LICENSE.md file.
 Some more details to be found here https://hackaday.io/project/8559-pic16f1xxx-arduino-based-programmer

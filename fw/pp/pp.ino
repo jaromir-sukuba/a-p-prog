@@ -116,8 +116,8 @@ int main (void)
         {
         usart_tx_b ('I');
         usart_tx_b (0x0A);
-        p16c_enter_progmode();
-        test = p16c_get_ID();
+        enter_progmode();
+//        test = get_ID();
         exit_progmode();
         usart_tx_hexa_16(test);
         usart_tx_b (0x0A);
@@ -126,8 +126,9 @@ int main (void)
         {
         usart_tx_b ('R');
         usart_tx_b (0x0A);
-        p16c_enter_progmode();
-        p16c_isp_read_pgm(flash_buffer,0x0,64);
+        enter_progmode();
+        isp_reset_pointer();
+        isp_read_pgm(flash_buffer,64);
         exit_progmode();
         for (i=0;i<64;i++)
           {
@@ -139,8 +140,9 @@ int main (void)
       if (rx=='w')
         {
         usart_tx_b ('W');
-        p16c_enter_progmode();
-        p16c_isp_write_pgm(fmimg,0,32);
+        enter_progmode();
+        isp_reset_pointer();
+        isp_write_pgm(fmimg,32,0);
 //        p16c_isp_write_pgm(fmimg,32,32);
         exit_progmode();
         usart_tx_b ('*');
@@ -149,9 +151,9 @@ int main (void)
       if (rx=='e')
         {
         usart_tx_b ('E');
-        p16c_enter_progmode();
-        p16c_set_pc (0x8000);
-        p16c_bulk_erase ();
+        enter_progmode();
+        isp_reset_pointer();
+        isp_mass_erase();
         exit_progmode();
         usart_tx_b ('*');
         usart_tx_b (0x0A);
@@ -230,7 +232,12 @@ int main (void)
           usart_tx_b (0x88);
           rx_state = 0;
           }
-          
+        if (rx_message[0]==0x09)
+          {
+          isp_reset_pointer_16d();
+          usart_tx_b (0x89);
+          rx_state = 0;
+          }        
         if (rx_message[0]==0x10)
           {
           p18_enter_progmode();
@@ -442,6 +449,15 @@ void isp_reset_pointer (void)
 {
 //_delay_us(3*ISP_CLK_DELAY);
 isp_send(0x16,6);
+}
+
+void isp_reset_pointer_16d (void)
+{
+//_delay_us(3*ISP_CLK_DELAY);
+isp_send(0x1D,6);
+isp_send(0x0,8);
+isp_send(0x0,8);
+isp_send(0x0,8);
 }
 
 void isp_inc_pointer (void)
