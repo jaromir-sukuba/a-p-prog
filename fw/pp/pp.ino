@@ -1,5 +1,5 @@
 /*
- * pp programmer, for SW 0.96 and higher
+ * pp programmer, for SW 0.98 and higher
  * 
  * 
  */
@@ -31,7 +31,7 @@
 #define  ISP_CLK_D_I ISP_DDR &= ~(1<<ISP_CLK);
 #define  ISP_CLK_D_0 ISP_DDR |= (1<<ISP_CLK);
 
-#define  ISP_CLK_DELAY  3
+#define  ISP_CLK_DELAY  1
 void isp_send (unsigned int data, unsigned char n);
 unsigned int isp_read_16 (void);
 unsigned char enter_progmode (void);
@@ -44,7 +44,7 @@ void isp_send_8_msb (unsigned char data);
 unsigned int isp_read_8_msb (void);
 unsigned int isp_read_16_msb (void);
 unsigned char p16c_enter_progmode (void);
-void p16c_set_pc (unsigned int pc);
+void p16c_set_pc (unsigned long pc);
 void p16c_bulk_erase (void);
 void p16c_load_nvm (unsigned char inc, unsigned int data);
 unsigned int p16c_read_data_nvm (unsigned char inc);
@@ -354,11 +354,7 @@ int main (void)
           p16c_isp_write_cfg (cfg_val, addr);
           usart_tx_b (0xC4);
           rx_state = 0;
-          }  
-
-         
-
-                    
+          }                      
         }
       }      
     }
@@ -883,7 +879,7 @@ isp_send_8_msb(0x50);
 _delay_us(300);
 }
 
-void p16c_set_pc (unsigned int pc)
+void p16c_set_pc (unsigned long pc)
 {
   isp_send_8_msb(0x80);
   _delay_us(2);
@@ -909,12 +905,15 @@ void p16c_load_nvm (unsigned int data, unsigned char inc)
 unsigned int p16c_read_data_nvm (unsigned char inc)
 {
   unsigned int retval;
+  unsigned char tmp;
   if (inc==0) isp_send_8_msb(0xFC);
   else isp_send_8_msb(0xFE);
   _delay_us(2);
-  isp_read_8_msb();
+  tmp = isp_read_8_msb();
   retval = isp_read_16_msb();
-  return retval>>1;
+  retval = retval >> 1;
+  if (tmp&0x01) retval = retval | 0x8000;
+  return retval;
   }
 
 void p16c_begin_prog (unsigned char cfg_bit)
@@ -930,7 +929,7 @@ unsigned int p16c_get_ID (void)
   return p16c_read_data_nvm(1);
   }
   
-void p16c_isp_write_pgm (unsigned int * data, unsigned int addr, unsigned char n)
+void p16c_isp_write_pgm (unsigned int * data, unsigned long addr, unsigned char n)
 {
 unsigned char i;
 //_delay_us(3*ISP_CLK_DELAY);
@@ -941,7 +940,7 @@ p16c_set_pc(addr);
 p16c_begin_prog(0);
 }
 
-void p16c_isp_read_pgm (unsigned int * data, unsigned int addr, unsigned char n)
+void p16c_isp_read_pgm (unsigned int * data, unsigned long addr, unsigned char n)
 {
 unsigned char i;
 unsigned int tmp1,tmp2;
@@ -951,7 +950,7 @@ for (i=0;i<n;i++)
   data[i] = p16c_read_data_nvm(1);
 }
 
-void p16c_isp_write_cfg (unsigned int data, unsigned int addr)
+void p16c_isp_write_cfg (unsigned int data, unsigned long addr)
 {
 unsigned char i;
 //_delay_us(3*ISP_CLK_DELAY);

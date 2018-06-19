@@ -198,6 +198,14 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16F18344  |        |
 | PIC16F18345  |        |
 | PIC16F18346  | YES    |
+| PIC16F18424  |        | 
+| PIC16F18425  |        | 
+| PIC16F18426  |        | 
+| PIC16F18444  |        | 
+| PIC16F18445  |        | 
+| PIC16F18446  |        | 
+| PIC16F18455  |        | 
+| PIC16F18456  |        | 
 | PIC16F18854  |        | 
 | PIC16F18855  | YES    | 
 | PIC16F18856  |        |
@@ -301,6 +309,12 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC16LF18344 |        |
 | PIC16LF18345 |        |
 | PIC16LF18346 |        |
+| PIC16LF18424 |        | 
+| PIC16LF18425 |        | 
+| PIC16LF18444 |        | 
+| PIC16LF18445 |        | 
+| PIC16LF18455 |        | 
+| PIC16LF18456 |        | 
 | PIC16LF18854 |        | 
 | PIC16LF18855 |        | 
 | PIC16LF18856 |        |
@@ -328,14 +342,14 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18F25J50  |        | 
 | PIC18F25K22  |        | 
 | PIC18F25K50  | YES    | 
-| PIC18F25k80  | YES    | 
+| PIC18F25K80  | YES    | 
 | PIC18F26J11  | YES    | 
 | PIC18F26J13  |        | 
 | PIC18F26J50  | YES    | 
 | PIC18F26J53  |        | 
 | PIC18F26K22  | YES    | 
 | PIC18F26K50  |        | 
-| PIC18F26k80  |        | 
+| PIC18F26K80  |        | 
 | PIC18F27J13  |        | 
 | PIC18F27J53  | YES    | 
 | PIC18F43K22  |        | 
@@ -348,14 +362,34 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18F45J50  |        | 
 | PIC18F45K22  |        | 
 | PIC18F45K50  |        | 
-| PIC18F45k80  |        | 
+| PIC18F45K80  |        | 
 | PIC18F46J11  |        | 
 | PIC18F46J13  |        | 
 | PIC18F46J50  |        | 
 | PIC18F46J53  |        | 
 | PIC18F46K22  |        | 
-| PIC18F46k50  |        | 
-| PIC18F46k80  |        | 
+| PIC18F46K50  |        | 
+| PIC18F46K80  |        | 
+| PIC18F24K40  |        | 
+| PIC18F25K40  |        | 
+| PIC18F26K40  |        | 
+| PIC18F27K40  |        | 
+| PIC18F45K40  |        | 
+| PIC18F46K40  |        | 
+| PIC18F47K40  | YES    | 
+| PIC18F65K40  |        | 
+| PIC18F66K40  |        | 
+| PIC18F67K40  |        |  
+| PIC18F24K42  |        | 
+| PIC18F25K42  |        | 
+| PIC18F26K42  |        | 
+| PIC18F27K42  |        | 
+| PIC18F45K42  |        | 
+| PIC18F46K42  |        | 
+| PIC18F47K42  |        | 
+| PIC18F55K42  |        | 
+| PIC18F56K42  |        | 
+| PIC18F57K42  | YES    | 
 | PIC18F47J13  |        | 
 | PIC18F47J53  |        | 
 | PIC18F63J11  |        | 
@@ -369,7 +403,7 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18F65J90  |        | 
 | PIC18F65J94  |        | 
 | PIC18F65K22  |        | 
-| PIC18F65k80  |        | 
+| PIC18F65K80  |        | 
 | PIC18F65K90  |        | 
 | PIC18F66J10  |        | 
 | PIC18F66J11  |        | 
@@ -384,7 +418,7 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18F66J94  |        | 
 | PIC18F66J99  |        | 
 | PIC18F66K22  |        | 
-| PIC18F66k80  |        | 
+| PIC18F66K80  |        | 
 | PIC18F66K90  |        | 
 | PIC18F67J10  |        | 
 | PIC18F67J11  |        | 
@@ -450,14 +484,14 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18LF25J50 |        | 
 | PIC18LF25K22 | YES    | 
 | PIC18LF25K50 | YES    | 
-| PIC18LF25k80 |        | 
+| PIC18LF25K80 |        | 
 | PIC18LF26J11 |        | 
 | PIC18LF26J13 |        | 
 | PIC18LF26J50 |        | 
 | PIC18LF26J53 |        | 
 | PIC18LF26K22 |        | 
 | PIC18LF26K50 |        | 
-| PIC18LF26k80 |        | 
+| PIC18LF26K80 |        | 
 | PIC18LF27J13 |        | 
 | PIC18LF27J53 |        | 
 | PIC18LF43K22 |        | 
@@ -470,18 +504,38 @@ Obviously, there is more supported than verified (tested) devices. I tried to te
 | PIC18LF45J50 |        | 
 | PIC18LF45K22 |        | 
 | PIC18LF45K50 |        | 
-| PIC18LF45k80 |        | 
+| PIC18LF45K80 |        | 
 | PIC18LF46J11 |        | 
 | PIC18LF46J13 |        | 
 | PIC18LF46J50 |        | 
 | PIC18LF46J53 |        | 
 | PIC18LF46K22 |        | 
-| PIC18LF46k50 |        | 
-| PIC18LF46k80 |        | 
+| PIC18LF46K50 |        | 
+| PIC18LF46K80 |        | 
 | PIC18LF47J13 |        | 
 | PIC18LF47J53 |        | 
-| PIC18LF65k80 |        | 
-| PIC18LF66k80 |        | 
+| PIC18LF65K80 |        | 
+| PIC18LF66K80 |        | 
+| PIC18LF24K40 |        | 
+| PIC18LF25K40 |        | 
+| PIC18LF26K40 |        | 
+| PIC18LF27K40 |        | 
+| PIC18LF45K40 |        | 
+| PIC18LF46K40 |        | 
+| PIC18LF47K40 |        | 
+| PIC18LF65K40 |        | 
+| PIC18LF66K40 |        | 
+| PIC18LF67K40 |        | 
+| PIC18LF24K42 |        | 
+| PIC18LF25K42 |        | 
+| PIC18LF26K42 |        | 
+| PIC18LF27K42 |        | 
+| PIC18LF45K42 |        | 
+| PIC18LF46K42 |        | 
+| PIC18LF47K42 |        | 
+| PIC18LF55K42 |        | 
+| PIC18LF56K42 |        | 
+| PIC18LF57K42 |        | 
 
 The whole project is licensed under MIT license, see LICENSE.md file.
 Some more details to be found here https://hackaday.io/project/8559-pic16f1xxx-arduino-based-programmer
