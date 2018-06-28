@@ -21,7 +21,7 @@ void comErr(char *fmt, ...);
 void flsprintf(FILE* f, char *fmt, ...);
 
 char * COM = "";
-char * PP_VERSION = "0.98";
+char * PP_VERSION = "0.99";
 
 #define	PROGMEM_LEN	260000
 #define	CONFIG_LEN	32
@@ -36,7 +36,7 @@ char * PP_VERSION = "0.98";
 #define	CF_P16F_D	8
 #define	CF_P18F_F	9
 #define	CF_P18F_G	10
-
+#define	CF_P18F_Q	11
 
 int verbose = 1,verify = 1,program = 1,sleep_time = 0;
 int devid_expected,devid_mask,baudRate,com,flash_size,page_size,chip_family,config_size;
@@ -413,6 +413,7 @@ int setCPUtype(char* cpu)
 				if (strcmp("CF_P18F_E",read_algo_type)==0) chip_family = CF_P18F_E;
 				if (strcmp("CF_P18F_F",read_algo_type)==0) chip_family = CF_P18F_F;
 				if (strcmp("CF_P18F_G",read_algo_type)==0) chip_family = CF_P18F_G;
+				if (strcmp("CF_P18F_Q",read_algo_type)==0) chip_family = CF_P18F_Q;
 				if (chip_family == CF_P18F_A) config_size = 16;
 				if (chip_family == CF_P18F_B) config_size = 8;
 				if (chip_family == CF_P18F_C) 
@@ -423,6 +424,7 @@ int setCPUtype(char* cpu)
 				if (chip_family == CF_P18F_D) config_size = 16;
 				if (chip_family == CF_P18F_E) config_size = 16;
 				if (chip_family == CF_P18F_F) config_size = 12;
+				if (chip_family == CF_P18F_Q) config_size = 12;
 				if (chip_family == CF_P18F_G) 
 					{
 						config_size = 10;
@@ -809,6 +811,51 @@ int p16c_write_single_cfg (unsigned char data1, unsigned char data2, int address
     return 0;
     }
 
+int p18q_write_single_cfg (unsigned char data1, unsigned char data2, int address)
+    {
+    if (verbose>2) flsprintf(stdout,"Writing cfg 0x%2.2x 0x%2.2x at 0x%6.6x\n", data1, data2, address);
+    putByte(0x45);
+    putByte(6);
+    putByte(0);
+    putByte((address>>16)&0xFF);
+    putByte((address>>8)&0xFF);
+    putByte((address>>0)&0xFF);
+    putByte(data1);
+    putByte(data2);
+    getByte();
+    return 0;
+    }
+    
+int p18q_write_page (unsigned char * data, int address, unsigned char num)
+    {
+    unsigned char i, empty;
+    address = address / 2;
+    empty = 1;
+    for (i=0; i<num; i=i+2)
+		{
+		if 	((data[i]!=0xFF)|(data[i+1]!=0xFF))
+			empty = 0;
+		}
+    if (verbose>2) flsprintf(stdout,"Writing A page of %d bytes at 0x%6.6x\n", num, address);
+    if (empty==1)
+        {
+        if (verbose>3)
+            flsprintf(stdout,"~");
+        return 0;
+        }
+    putByte(0x46);
+    putByte(4+num);
+    putByte(num);
+    putByte((address>>16)&0xFF);
+    putByte((address>>8)&0xFF);
+    putByte((address>>0)&0xFF);
+    for (i=0; i<num; i++)
+        putByte(data[i]);
+    getByte();
+    return 0;
+    }    
+
+
 int p16c_write_cfg (void)
     {
 	p16c_write_single_cfg(config_bytes[1],config_bytes[0],0x8007);
@@ -832,6 +879,7 @@ int prog_enter_progmode (void)
     else 	if (chip_family==CF_P18F_E) putByte(0x10);
     else 	if (chip_family==CF_P16F_C) putByte(0x40);
     else 	if (chip_family==CF_P18F_F) putByte(0x40);
+    else 	if (chip_family==CF_P18F_Q) putByte(0x40);
     putByte(0x00);
     getByte();
     return 0;
@@ -862,7 +910,7 @@ int prog_get_device_id (void)
         devid = devid & devid_mask;
         return devid;
         }
-    if ((chip_family==CF_P18F_F))
+    if ((chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q))
 		{
 		p16c_read_page(mem_str, 0x3FFFFE*2,2);
         devid = (((unsigned int)(mem_str[1]))<<8) + (((unsigned int)(mem_str[0]))<<0);
@@ -926,7 +974,7 @@ int parse_hex (char * filename, unsigned char * progmem, unsigned char * config)
                 if (verbose>2) printf("PM ");
                 for (i=0; i<line_len; i++) progmem[effective_address+i] = line_content[i];
                 }
-            if ((line_address_offset==0x30)&((chip_family==CF_P18F_A)|(chip_family==CF_P18F_D)|(chip_family==CF_P18F_E)|(chip_family==CF_P18F_F)))
+            if ((line_address_offset==0x30)&((chip_family==CF_P18F_A)|(chip_family==CF_P18F_D)|(chip_family==CF_P18F_E)|(chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q)))
                 {
                 if (verbose>2) printf("CB ");
                 for (i=0; i<line_len; i++) config[i] = line_content[i];
@@ -1005,7 +1053,7 @@ int main(int argc, char *argv[])
         return 1;
         }
     //ah, I need to unify programming interfaces for PIC16 and PIC18
-    if ((chip_family==CF_P18F_A)|(chip_family==CF_P18F_B)|(chip_family==CF_P18F_D)|(chip_family==CF_P18F_E)|(chip_family==CF_P18F_F))
+    if ((chip_family==CF_P18F_A)|(chip_family==CF_P18F_B)|(chip_family==CF_P18F_D)|(chip_family==CF_P18F_E)|(chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q))
         {
         if (program==1)
             {
@@ -1018,7 +1066,7 @@ int main(int argc, char *argv[])
                 p18d_mass_erase();
             if (chip_family==CF_P18F_E)
                 p18e_mass_erase();
-            if (chip_family==CF_P18F_F)
+            if ((chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q))
                 p16c_mass_erase();                
             if (verbose>0) printf ("Programming FLASH (%d B in %d pages per %d bytes): \n",flash_size,flash_size/page_size,page_size);
             fflush(stdout);
@@ -1028,8 +1076,10 @@ int main(int argc, char *argv[])
                     {
 					if ((chip_family==CF_P18F_D)|(chip_family==CF_P18F_E))
 						p18d_write_page(progmem+i,i,page_size);
-					if (chip_family==CF_P18F_F)
+					else if (chip_family==CF_P18F_F)
 						p16c_write_page(progmem+i,i*2,page_size);						
+					else if (chip_family==CF_P18F_Q)
+						p18q_write_page(progmem+i,i*2,page_size);						
 					else
 						p18a_write_page(progmem+i,i,page_size);
                     pages_performed++;
@@ -1054,6 +1104,7 @@ int main(int argc, char *argv[])
                 if (chip_family==CF_P18F_D) p18d_write_cfg(config_bytes[i],config_bytes[i+1],0x300000+i);
                 if (chip_family==CF_P18F_E) p18d_write_cfg(config_bytes[i],config_bytes[i+1],0x300000+i);
                 if (chip_family==CF_P18F_F) p16c_write_single_cfg (config_bytes[i+1],config_bytes[i],0x300000+i);
+                if (chip_family==CF_P18F_Q) p18q_write_single_cfg (config_bytes[i+1],config_bytes[i],0x300000+i);
 				}
 															//for PIC18FxxJxx, config bytes are at the end of FLASH memory
             }
@@ -1073,7 +1124,7 @@ int main(int argc, char *argv[])
                     }
                 else
                     {
-					if (chip_family==CF_P18F_F)
+					if ((chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q))
 						p16c_read_page(tdat,i*2,page_size);		
 					else
 						p18a_read_page(tdat,i,page_size);
@@ -1097,7 +1148,7 @@ int main(int argc, char *argv[])
                     }
                 }
             if (verbose>0) printf ("\n%d pages verified\n",pages_performed);        
-            if (chip_family==CF_P18F_F)
+            if ((chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q))
 				p16c_read_page(tdat,0x300000*2,page_size);	
 			else
 				p18a_read_page(tdat,0x300000,page_size);

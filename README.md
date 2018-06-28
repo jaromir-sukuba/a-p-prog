@@ -100,9 +100,8 @@ There is database file pp3_devices.dat which hold information of supported PIC t
 
 Obviously, there is more supported than verified (tested) devices. I tried to test at least one device from specific family. The members from one family are usually very very similar, giving me enough confidence to mark them as supproted. Of course, typos can happen, but those are easy to correct.
 
-
 **DEVICE**|**TESTED**
------|-----
+:-----:|:-----:
 PIC12F1501|YES
 PIC12F1571| 
 PIC12F1572|YES
@@ -347,6 +346,7 @@ PIC18F25K40|
 PIC18F25K42| 
 PIC18F25K50|YES
 PIC18F25K80|YES
+PIC18F25Q10|YES
 PIC18F26J11|YES
 PIC18F26J13| 
 PIC18F26J50|YES
@@ -356,10 +356,12 @@ PIC18F26K40|
 PIC18F26K42| 
 PIC18F26K50| 
 PIC18F26K80| 
+PIC18F26Q10| 
 PIC18F27J13| 
 PIC18F27J53|YES
 PIC18F27K40| 
 PIC18F27K42| 
+PIC18F27Q10| 
 PIC18F43K22| 
 PIC18F44J10| 
 PIC18F44J11| 
@@ -373,6 +375,7 @@ PIC18F45K40|
 PIC18F45K42| 
 PIC18F45K50| 
 PIC18F45K80| 
+PIC18F45Q10| 
 PIC18F46J11| 
 PIC18F46J13| 
 PIC18F46J50| 
@@ -382,10 +385,12 @@ PIC18F46K40|
 PIC18F46K42| 
 PIC18F46K50| 
 PIC18F46K80| 
+PIC18F46Q10| 
 PIC18F47J13| 
 PIC18F47J53| 
 PIC18F47K40|YES
 PIC18F47K42| 
+PIC18F47Q10| 
 PIC18F55K42| 
 PIC18F56K42| 
 PIC18F57K42|YES

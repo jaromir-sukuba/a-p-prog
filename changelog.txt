@@ -91,3 +91,7 @@ there is external database parser, all MCU parameter are here in plain text
 - PIC16F184xx, PIC18FxxK40 and PIC18Fxx42 added, now 433 devices in total
 - minor programming speed increase
 
+2018-06-28
+- version 0.99
+- PIC18FxxQ10 support added, now 439 devices in total
+

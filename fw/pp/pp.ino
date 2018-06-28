@@ -1,5 +1,5 @@
 /*
- * pp programmer, for SW 0.98 and higher
+ * pp programmer, for SW 0.99 and higher
  * 
  * 
  */
@@ -50,7 +50,8 @@ void p16c_load_nvm (unsigned char inc, unsigned int data);
 unsigned int p16c_read_data_nvm (unsigned char inc);
 void p16c_begin_prog (unsigned char cfg_bit);
 void p16c_isp_write_cfg (unsigned int data, unsigned int addr);
-
+void p18q_isp_write_pgm (unsigned int * data, unsigned long addr, unsigned char n);
+void p18q_isp_write_cfg (unsigned int data, unsigned long addr);
 
 unsigned char p18_enter_progmode (void);
 unsigned int p18_get_ID (void);
@@ -88,8 +89,8 @@ unsigned int fmimg[32] = {
 
 unsigned int dat;
 unsigned char rx,i,main_state,bytes_to_receive,rx_state;
-unsigned char rx_message[250],rx_message_ptr;
-unsigned int flash_buffer[130];
+unsigned char rx_message[280],rx_message_ptr;
+unsigned int flash_buffer[260];
 unsigned int test,cfg_val;
 unsigned long addr;
 int main (void)
@@ -355,6 +356,26 @@ int main (void)
           usart_tx_b (0xC4);
           rx_state = 0;
           }                      
+        if (rx_message[0]==0x45)
+          {
+          addr = (((unsigned long)(rx_message[3]))<<16) + (((unsigned long)(rx_message[4]))<<8) + (((unsigned long)(rx_message[5]))<<0);
+          cfg_val = rx_message[6];
+          cfg_val = (cfg_val<<8) + rx_message[7];
+          p18q_isp_write_cfg (cfg_val, addr);
+          usart_tx_b (0xC5);
+          rx_state = 0;
+          } 
+        if (rx_message[0]==0x46)
+          {
+          addr = (((unsigned long)(rx_message[3]))<<16) + (((unsigned long)(rx_message[4]))<<8) + (((unsigned long)(rx_message[5]))<<0);
+          for (i=0;i<rx_message[2]/2;i++)
+            {
+            flash_buffer[i] = (((unsigned int)(rx_message[(2*i)+1+6]))<<8) + (((unsigned int)(rx_message[(2*i)+0+6]))<<0);
+            }
+          p18q_isp_write_pgm (flash_buffer, addr, rx_message[2]/2);
+          usart_tx_b (0xC6);
+          rx_state = 0;
+          }        
         }
       }      
     }
@@ -890,7 +911,7 @@ void p16c_set_pc (unsigned long pc)
 void p16c_bulk_erase (void)
 {
   isp_send_8_msb(0x18);
-  _delay_ms(15);
+  _delay_ms(100);
 }
 
 void p16c_load_nvm (unsigned int data, unsigned char inc)
@@ -957,6 +978,29 @@ unsigned char i;
 p16c_set_pc(addr);
 p16c_load_nvm(data,0);  
 p16c_begin_prog(1);
+}
+
+void p18q_isp_write_pgm (unsigned int * data, unsigned long addr, unsigned char n)
+{
+unsigned char i;
+//_delay_us(3*ISP_CLK_DELAY);
+p16c_set_pc(addr);
+for (i=0;i<n;i++)
+  {  
+  isp_send_8_msb(0xE0);  
+  isp_send_24_msb(data[i]);  
+  _delay_us(65);
+  }
+}
+
+void p18q_isp_write_cfg (unsigned int data, unsigned long addr)
+{
+unsigned char i;
+//_delay_us(3*ISP_CLK_DELAY);
+p16c_set_pc(addr);
+isp_send_8_msb(0xE0);  
+isp_send_24_msb(data);  
+_delay_us(65); 
 }
 
 
