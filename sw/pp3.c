@@ -38,7 +38,9 @@ char * PP_VERSION = "0.99";
 #define	CF_P18F_G	10
 #define	CF_P18F_Q	11
 
-int verbose = 1,verify = 1,program = 1,sleep_time = 0;
+int verbose = 1,verify = 1,program = 1;
+// set a proper init value for sleep time to avoid a lot of issues such as 'rx fail'.
+int sleep_time = 2000;
 int devid_expected,devid_mask,baudRate,com,flash_size,page_size,chip_family,config_size;
 unsigned char file_image[70000],progmem[PROGMEM_LEN], config_bytes[CONFIG_LEN];
 
