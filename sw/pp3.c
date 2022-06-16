@@ -384,8 +384,8 @@ int setCPUtype(char* cpu)
     FILE* sf = fopen(filename, "r");
     if (sf==0)
         {
-        return -1;
-        if (verbose>0) printf ("Can't open database file %s\n",filename);
+        if (verbose>0) printf ("Can't open device database file '%s'\n",filename);
+        exit(1);
         }
     if (verbose>2) printf ("File open\n");
     while ((read =  getlinex(&line, &len, sf)) != -1)
