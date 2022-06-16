@@ -382,6 +382,13 @@ int setCPUtype(char* cpu)
     size_t len = 0;
     if (verbose>2) printf ("Opening filename %s \n", filename);
     FILE* sf = fopen(filename, "r");
+#if defined(__linux__)
+    if (sf==0)
+        {
+        filename = "/etc/pp3/pp3_devices.dat";
+        sf = fopen(filename, "r");
+        }
+#endif
     if (sf==0)
         {
         if (verbose>0) printf ("Can't open device database file '%s'\n",filename);
