@@ -60,7 +60,7 @@ void initSerialPort()
     if (verbose>2)
         printf("Opening: %s at %d\n",COM,baudRate);
     com =  open(COM, O_RDWR | O_NOCTTY | O_NDELAY);
-    if (com <0) comErr("Failed to open serial port");
+    if (com <0) comErr("Failed to open serial port\n");
 
     struct termios opts;
     memset (&opts,0,sizeof (opts));
