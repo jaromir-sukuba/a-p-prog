@@ -38,7 +38,9 @@ char * PP_VERSION = "0.99";
 #define	CF_P18F_G	10
 #define	CF_P18F_Q	11
 
-int verbose = 1,verify = 1,program = 1,sleep_time = 0;
+int verbose = 1,verify = 1,program = 1;
+// set a proper init value for sleep time to avoid a lot of issues such as 'rx fail'.
+int sleep_time = 2000;
 int devid_expected,devid_mask,baudRate,com,flash_size,page_size,chip_family,config_size;
 unsigned char file_image[70000],progmem[PROGMEM_LEN], config_bytes[CONFIG_LEN];
 
@@ -58,7 +60,7 @@ void initSerialPort()
     if (verbose>2)
         printf("Opening: %s at %d\n",COM,baudRate);
     com =  open(COM, O_RDWR | O_NOCTTY | O_NDELAY);
-    if (com <0) comErr("Failed to open serial port");
+    if (com <0) comErr("Failed to open serial port\n");
 
     struct termios opts;
     memset (&opts,0,sizeof (opts));
@@ -318,6 +320,14 @@ void sleep_ms (int num)
 void printHelp()
     {
     flsprintf(stdout,"pp programmer\n");
+    flsprintf(stdout,"Usage:\n");
+    flsprintf(stdout,"-c PORT : serial port device\n");
+    flsprintf(stdout,"-t MODEL : target MCU model, such as '16f1824'\n");
+    flsprintf(stdout,"-s TIME : sleep time in ms while arduino bootloader expires (default: 2000)\n");
+    flsprintf(stdout,"-v NUM : verbose output level (default: 1)\n");
+    flsprintf(stdout,"-n : skip verify after program\n");
+    flsprintf(stdout,"-p : skip program \n");
+    flsprintf(stdout,"-h : show this help message and exit\n");
     exit(0);
     }
 
@@ -325,7 +335,7 @@ void printHelp()
 void parseArgs(int argc, char *argv[])
     {
     int c;
-    while ((c = getopt (argc, argv, "c:nps:t:v:")) != -1)
+    while ((c = getopt (argc, argv, "c:nphs:t:v:")) != -1)
         {
         switch (c)
             {
@@ -337,6 +347,8 @@ void parseArgs(int argc, char *argv[])
                 break;
             case 'p':
                 program = 0;
+                // skip program means also skip verify.
+                verify = 0;
                 break;
             case 's' :
                 sscanf(optarg,"%d",&sleep_time);
@@ -347,6 +359,9 @@ void parseArgs(int argc, char *argv[])
             case 'v' :
                 sscanf(optarg,"%d",&verbose);
                 break;
+            case 'h' :
+                printHelp();
+                exit(0);
             case '?' :
                 if (isprint (optopt))
                     fprintf (stderr, "Unknown option `-%c'.\n", optopt);
@@ -382,10 +397,17 @@ int setCPUtype(char* cpu)
     size_t len = 0;
     if (verbose>2) printf ("Opening filename %s \n", filename);
     FILE* sf = fopen(filename, "r");
+#if defined(__linux__)
     if (sf==0)
         {
-        return -1;
-        if (verbose>0) printf ("Can't open database file %s\n",filename);
+        filename = "/etc/pp3/pp3_devices.dat";
+        sf = fopen(filename, "r");
+        }
+#endif
+    if (sf==0)
+        {
+        if (verbose>0) printf ("Can't open device database file '%s'\n",filename);
+        exit(1);
         }
     if (verbose>2) printf ("File open\n");
     while ((read =  getlinex(&line, &len, sf)) != -1)
@@ -435,6 +457,13 @@ int setCPUtype(char* cpu)
 			}
         }
     fclose(sf);
+
+    // means specified cpu not found in 'pp3_devices.dat'
+    if (flash_size==0)
+        {
+          printf("PIC model '%s' not supported, please consider to add it to 'pp3_devices.dat'\n", cpu);
+          exit(1);
+        }
     return 0;
     }
 
@@ -1008,9 +1037,22 @@ int main(int argc, char *argv[])
     unsigned char * pm_point, * cm_point;
     unsigned char tdat[200];
     parseArgs(argc,argv);
+    // check setCPUtype works or not.
+    if (flash_size==0)
+        {
+          printf("Please use '-t MODEL' to specify correct PIC model, such as '16f1824'\n");
+          exit(1);
+        }
+    if (strcmp(COM,"")==0)
+        {
+          printf("Please use '-c PORT' to specify correct serial device\n");
+          exit(1);
+        }
     if (verbose>0) printf ("PP programmer, version %s\n",PP_VERSION);
     if (verbose>1) printf ("Opening serial port\n");
+
     initSerialPort();
+
     if (sleep_time>0)
         {
         if (verbose>0) printf ("Sleeping for %d ms while arduino bootloader expires\n", sleep_time);
